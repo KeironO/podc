@@ -12,19 +12,28 @@ COL_AXIS = 1
 CHANNEL_AXIS = 2
 
 class VideoDataGenerator(Sequence):
-    def __init__(self, filepaths, batch_size, shuffle=False, height=None, width=None, featurewise_center=False, rotation_range=False, 
-                    brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False):
-        self.filepaths = filepaths
+    def __init__(self, directory, filenames, labels, batch_size, shuffle=False, height=None, width=None, featurewise_center=False, rotation_range=False, brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False):
+        self.directory = directory
+        self.filenames = filenames
+        self.labels = labels
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.height = height
         self.width = width
         self.featurewise_center = featurewise_center
         self.rotation_range = rotation_range
-        self.brightness_range = brightness_range,
+        self.brightness_range = brightness_range
+        self.shear_range = shear_range
+        self.zoom_range = zoom_range
         self.horizontal_flip = horizontal_flip
         self.vertical_flip = vertical_flip
+
+        self._generate_filepaths()
         self.on_epoch_end()
+
+    def _generate_filepaths(self):
+        self.filepaths = [os.path.join(self.directory, x) for x in self.filenames]
+
 
     def __len__(self):
         return int(np.floor(len(self.filepaths)/ self.batch_size))
@@ -98,38 +107,72 @@ class VideoDataGenerator(Sequence):
                 frame = frame.reshape(frame.shape[0], frame.shape[1], 1)
                 frames[index] = frame
             return frames
+        
+        X = []
+        y = []
 
         for filepath in filepaths:
             x = ___read(filepath)
-            print("Doing")
+
             if self.featurewise_center != False:
-                print("Featurewise Centre")
                 x = __featurewise_centre(x)
             
             if self.rotation_range != False:
-                print("Rotation Range")
                 x = ___random_rotation(x, self.rotation_range)
             
             if self.horizontal_flip != False:
-                print("Horizontal Flip")
                 x = __flip_axis(x, ROW_AXIS)
             
             if self.vertical_flip != False:
-                print("Vertical Flip")
                 x = __flip_axis(x, COL_AXIS)
 
-        return x, None
+            if self.shear_range != False:
+                x = __random_shear(x, self.shear_range)
+
+            if self.brightness_range != False:
+                pass
+
+            if self.zoom_range != False:
+                x = __random_zoom(x, self.zoom_range)
+            
+            X.append(x)
+            y.append(self.labels["".join(os.path.splitext(os.path.basename(filepath)))])
+        return X, y
+
 
 import matplotlib.pyplot as plt
-
+import matplotlib.animation as animation
 if __name__ == "__main__":
+    names = ["positive", "negative"]
+
+    videos_dir = "/home/keo7/Videos/"
+
+    labels_dict = {}
+    for n in names:
+        fn = "videos of %s sliding sign from reproducibility study" % (n)
+        files = os.listdir(os.path.join(videos_dir, fn))
+        if n == "negative":
+            n = 0
+        else:
+            n = 1
+        
+        for i in files:
+            labels_dict[i] = n    
+
+
     data_dir = "/home/keo7/Data/slidingsign"
-    fp = [os.path.join(data_dir, x) for x in os.listdir(data_dir)][3:4]
-    vdg = VideoDataGenerator(fp, 1, height=224, width=224, featurewise_center=True, rotation_range=8, horizontal_flip=True)
+    filenames = os.listdir(data_dir)
+    vdg = VideoDataGenerator(data_dir, filenames, labels_dict, 8, height=128, width=128, featurewise_center=True, rotation_range=1, horizontal_flip=True, shear_range=5)
+    
     for X, y in vdg:
-        for indx in range(X.shape[0]):
-            plt.figure()
-            plt.imshow(X[indx].reshape(X.shape[1], X.shape[2]))
+        print(len(y))
+        for x in X:
+            fig = plt.figure()
+            frames = []
+            for indx in range(x.shape[0]):
+                frames.append([plt.imshow(x[indx].reshape(x.shape[1], x.shape[2]))])
+            ani = animation.ArtistAnimation(fig, frames, interval=20, blit=True, repeat=False)
+            plt.tight_layout()
             plt.show()
-            break
-        break
+            plt.close("all")
+            exit(0)
