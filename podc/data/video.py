@@ -27,7 +27,6 @@ class VideoDataGenerator(Sequence):
         self.zoom_range = zoom_range
         self.horizontal_flip = horizontal_flip
         self.vertical_flip = vertical_flip
-
         self._generate_filepaths()
         self.on_epoch_end()
 
@@ -45,8 +44,8 @@ class VideoDataGenerator(Sequence):
 
     def __getitem__(self, index):
         indexes = self.indexes[index*self.batch_size:self.batch_size*(index+1)]
-        filepaths = [self.filepaths[indx] for indx in indexes]
-        X, y = self.__data_generation(filepaths)
+        filepaths = np.array([self.filepaths[indx] for indx in indexes])
+        X, y = self.__data_generation(filepaths[indexes])
         return X, y     
 
     def __data_generation(self, filepaths):
@@ -94,17 +93,16 @@ class VideoDataGenerator(Sequence):
             meta = video.get_meta_data()
             
             if None not in [self.width, self.height]:
-                frames = np.zeros((meta["nframes"], self.width, self.height, 1))
+                frames = np.zeros((meta["nframes"], self.width, self.height, 3))
             else:
-                frames = np.zeros((meta["nframes"], meta["size"][0], meta["size"][1], 1))
+                frames = np.zeros((meta["nframes"], meta["size"][0], meta["size"][1], 3))
             for index, frame in enumerate(video):
                 frame = frame.view(type=np.ndarray)
                 frame = Image.fromarray(frame)
                 if None not in [self.width, self.height]:
                     frame = frame.resize((self.width, self.height))
-                frame = frame.convert("L")
                 frame = np.array(frame)
-                frame = frame.reshape(frame.shape[0], frame.shape[1], 1)
+                frame = frame.reshape(frame.shape[0], frame.shape[1], 3)
                 frames[index] = frame
             return frames
         
@@ -137,42 +135,6 @@ class VideoDataGenerator(Sequence):
             
             X.append(x)
             y.append(self.labels["".join(os.path.splitext(os.path.basename(filepath)))])
+
+        X = np.array(X)
         return X, y
-
-
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-if __name__ == "__main__":
-    names = ["positive", "negative"]
-
-    videos_dir = "/home/keo7/Videos/"
-
-    labels_dict = {}
-    for n in names:
-        fn = "videos of %s sliding sign from reproducibility study" % (n)
-        files = os.listdir(os.path.join(videos_dir, fn))
-        if n == "negative":
-            n = 0
-        else:
-            n = 1
-        
-        for i in files:
-            labels_dict[i] = n    
-
-
-    data_dir = "/home/keo7/Data/slidingsign"
-    filenames = os.listdir(data_dir)
-    vdg = VideoDataGenerator(data_dir, filenames, labels_dict, 8, height=128, width=128, featurewise_center=True, rotation_range=1, horizontal_flip=True, shear_range=5)
-    
-    for X, y in vdg:
-        print(len(y))
-        for x in X:
-            fig = plt.figure()
-            frames = []
-            for indx in range(x.shape[0]):
-                frames.append([plt.imshow(x[indx].reshape(x.shape[1], x.shape[2]))])
-            ani = animation.ArtistAnimation(fig, frames, interval=20, blit=True, repeat=False)
-            plt.tight_layout()
-            plt.show()
-            plt.close("all")
-            exit(0)
