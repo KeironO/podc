@@ -3,16 +3,19 @@ from PIL import Image
 import pandas as pd
 import os
 from keras.utils import Sequence
+from keras.preprocessing.sequence import pad_sequences
 from keras_preprocessing.image import apply_affine_transform
 import numpy as np
 from keras import backend as K
+from joblib import Parallel, delayed, cpu_count
+import matplotlib.pyplot as plt
 
 ROW_AXIS = 0
 COL_AXIS = 1
 CHANNEL_AXIS = 2
 
 class VideoDataGenerator(Sequence):
-    def __init__(self, directory, filenames, labels, batch_size, shuffle=False, height=None, width=None, featurewise_center=False, rotation_range=False, brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False):
+    def __init__(self, directory, filenames, labels, batch_size, shuffle=False, height=224, width=224, max_frames=50, featurewise_center=False, rotation_range=False, brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False, n_jobs=1):
         self.directory = directory
         self.filenames = filenames
         self.labels = labels
@@ -20,6 +23,7 @@ class VideoDataGenerator(Sequence):
         self.shuffle = shuffle
         self.height = height
         self.width = width
+        self.max_frames = max_frames
         self.featurewise_center = featurewise_center
         self.rotation_range = rotation_range
         self.brightness_range = brightness_range
@@ -27,6 +31,7 @@ class VideoDataGenerator(Sequence):
         self.zoom_range = zoom_range
         self.horizontal_flip = horizontal_flip
         self.vertical_flip = vertical_flip
+        self.n_jobs = n_jobs
         self._generate_filepaths()
         self.on_epoch_end()
 
@@ -35,7 +40,7 @@ class VideoDataGenerator(Sequence):
 
 
     def __len__(self):
-        return int(np.floor(len(self.filepaths)/ self.batch_size))
+        return int(np.floor(len(self.filepaths)/self.batch_size))
 
     def on_epoch_end(self):
         self.indexes = np.arange(len(self.filepaths))
@@ -43,9 +48,10 @@ class VideoDataGenerator(Sequence):
             np.random.shuffle(self.indexes)
 
     def __getitem__(self, index):
-        indexes = self.indexes[index*self.batch_size:self.batch_size*(index+1)]
-        filepaths = np.array([self.filepaths[indx] for indx in indexes])
-        X, y = self.__data_generation(filepaths[indexes])
+        indxs = self.indexes[index*self.batch_size:self.batch_size*(index+1)]
+
+        filepaths = np.array([self.filepaths[k] for k in indxs])
+        X, y = self.__data_generation(filepaths)
         return X, y     
 
     def __data_generation(self, filepaths):
@@ -90,13 +96,11 @@ class VideoDataGenerator(Sequence):
 
         def ___read(filepath):
             video = imageio.get_reader(filepath, "ffmpeg")
-            meta = video.get_meta_data()
             
-            if None not in [self.width, self.height]:
-                frames = np.zeros((meta["nframes"], self.width, self.height, 3))
-            else:
-                frames = np.zeros((meta["nframes"], meta["size"][0], meta["size"][1], 3))
+            frames = np.empty((self.max_frames, self.width, self.height, 3), dtype="uint8")
             for index, frame in enumerate(video):
+                if index >= self.max_frames:
+                    break
                 frame = frame.view(type=np.ndarray)
                 frame = Image.fromarray(frame)
                 if None not in [self.width, self.height]:
@@ -104,12 +108,13 @@ class VideoDataGenerator(Sequence):
                 frame = np.array(frame)
                 frame = frame.reshape(frame.shape[0], frame.shape[1], 3)
                 frames[index] = frame
+
             return frames
         
-        X = []
+        X = np.zeros((len(filepaths), self.max_frames, self.width, self.height, 3), dtype="uint8")
         y = []
 
-        for filepath in filepaths:
+        def _do(filepath):
             x = ___read(filepath)
 
             if self.featurewise_center != False:
@@ -133,8 +138,20 @@ class VideoDataGenerator(Sequence):
             if self.zoom_range != False:
                 x = __random_zoom(x, self.zoom_range)
             
-            X.append(x)
-            y.append(self.labels["".join(os.path.splitext(os.path.basename(filepath)))])
 
-        X = np.array(X)
+            return x, self.labels["".join(os.path.splitext(os.path.basename(filepath)))]
+
+
+    
+        if self.n_jobs == -1:
+            self.n_jobs = cpu_count()
+        if self.n_jobs > 1:
+            data = Parallel(n_jobs=self.n_jobs, prefer="threads")(delayed(_do)(fp) for fp in filepaths)
+        else:
+            data = [_do(fp) for fp in filepaths]
+
+        for indx in range(len(data)):
+            x, _y = data[indx]
+            X[indx] = x
+            y.append(_y)
         return X, y
