@@ -40,7 +40,6 @@ class Model(object):
         model.load_weights("/home/keo7/Downloads/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5")
 
         # Bidirectional LSTM
-
         bidirnn = Sequential()
         bidirnn.add(TimeDistributed(Flatten(), input_shape=model.output_shape[1:], name="5timedistflatten"))
         bidirnn.add(Bidirectional(LSTM(32, return_sequences=True), name="5bidirlstm0"))
