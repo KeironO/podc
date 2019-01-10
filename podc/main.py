@@ -18,13 +18,13 @@ max_frames = 150
 width = 200
 height = 200
 
-filenames = np.array(os.listdir(data_dir))
+filenames = np.array(os.listdir(videos_dir))
 
 
 for train, test in KFold(n_splits=10).split(filenames):
     train, val = train_test_split(train, train_size=0.8, test_size=0.2)
-    tra_vdg = VideoDataGenerator(data_dir, filenames[train], labels, 2, max_frames=max_frames, height=height, width=width, rotation_range=1, shear_range=1, n_jobs=-1)
-    val_vdg = VideoDataGenerator(data_dir, filenames[val], labels, 1, max_frames=max_frames, height=height, width=width, n_jobs=-1)
+    tra_vdg = VideoDataGenerator(videos_dir, filenames[train], labels, 2, max_frames=max_frames, height=height, width=width, rotation_range=1, shear_range=1, n_jobs=-1)
+    val_vdg = VideoDataGenerator(videos_dir, filenames[val], labels, 1, max_frames=max_frames, height=height, width=width, n_jobs=-1)
     model = Classifier(width=width, height=height, max_frames=max_frames)
     model.train(tra_vdg, val_vdg, "/tmp/model.h5", epochs=10)
     
