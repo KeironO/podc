@@ -2,13 +2,19 @@ import imageio
 from PIL import Image
 import pandas as pd
 import os
+import sys
 from keras.utils import Sequence
 from keras.preprocessing.sequence import pad_sequences
 from keras_preprocessing.image import apply_affine_transform
 import numpy as np
 from keras import backend as K
 from joblib import Parallel, delayed, cpu_count
-import matplotlib.pyplot as plt
+from hurry.filesize import size
+
+# Logging details
+import logging
+#logging.basicConfig(format='%(asctime)s - %(message)s', stream=sys.stdout)
+
 
 ROW_AXIS = 0
 COL_AXIS = 1
@@ -52,6 +58,7 @@ class VideoDataGenerator(Sequence):
 
         filepaths = np.array([self.filepaths[k] for k in indxs])
         X, y = self.__data_generation(filepaths)
+
         return X, y     
 
     def __data_generation(self, filepaths):
@@ -107,8 +114,10 @@ class VideoDataGenerator(Sequence):
                     frame = frame.resize((self.width, self.height))
                 frame = np.array(frame)
                 frame = frame.reshape(frame.shape[0], frame.shape[1], 3)
-                frames[index] = frame
 
+                frames[index] = frame
+            frame_size = size(sys.getsizeof(frames))
+            logging.info("DATALOAD !! LOADED %s SUCCESS (%s)" % (filepath, frame_size))
             return frames
         
         X = np.zeros((len(filepaths), self.max_frames, self.width, self.height, 3), dtype="uint8")
@@ -118,26 +127,33 @@ class VideoDataGenerator(Sequence):
             x = ___read(filepath)
 
             if self.featurewise_center != False:
+                logging.info("DATAUG !! FEATUREWISE CENTERING %s" % (filepath))
                 x = __featurewise_centre(x)
             
             if self.rotation_range != False:
+                logging.info("DATAUG !! RANDOM ROTATION %s" % (filepath))
                 x = ___random_rotation(x, self.rotation_range)
             
             if self.horizontal_flip != False:
+                logging.info("DATAUG !! HORIZONTAL FLIP %s" % (filepath))
                 x = __flip_axis(x, ROW_AXIS)
             
             if self.vertical_flip != False:
+                logging.info("DATAUG !! VERTICAL FLIP %s" % (filepath))
                 x = __flip_axis(x, COL_AXIS)
 
             if self.shear_range != False:
+                logging.info("DATAUG !! SHEAR %s" % (filepath))
                 x = __random_shear(x, self.shear_range)
 
             if self.brightness_range != False:
                 pass
 
             if self.zoom_range != False:
+                logging.info("DATAUG !! HORIZONTAL FLIP %s" % (filepath))
                 x = __random_zoom(x, self.zoom_range)
             
+            logging.info("RETURNING !! DATA %s (%s)" % (filepath, size(sys.getsizeof(x))))
 
             return x, self.labels["".join(os.path.splitext(os.path.basename(filepath)))]
 
@@ -154,4 +170,6 @@ class VideoDataGenerator(Sequence):
             x, _y = data[indx]
             X[indx] = x
             y.append(_y)
+
+        logging.info("RETURNING !! X RETURNED IN SIZE %s" % (size(sys.getsizeof(X))))
         return X, y
