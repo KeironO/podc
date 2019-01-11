@@ -6,6 +6,7 @@ from keras.initializers import glorot_uniform
 from keras.applications import ResNet50, InceptionV3
 from keras.engine import Model
 from keras import backend as K
+import numpy as np
 
 class Classifier(object):
     def __init__(self, height, width, max_frames=10):
@@ -18,25 +19,21 @@ class Classifier(object):
     def build_clf(self):
         inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
         
-        incept = InceptionV3(weights="imagenet", include_top="False", pooling="avg")
-        incept.trainable = False
+        cnn = InceptionV3(weights="imagenet", include_top="False", pooling="avg")
+        cnn.trainable = False
 
-        td_incept = TimeDistributed(Lambda(lambda x: incept(x)))(inp)
-        fin_lstm = LSTM(256)(td_incept)
-        outputs = Dense(1, activation="softmax", kernel_initializer=glorot_uniform(seed=3), name="ol")(fin_lstm)
+        encoded_frames = TimeDistributed(Lambda(lambda x: cnn(x)))(inp)
 
-        model = Model(inputs=[inp], outputs=outputs)
+        encoded_vid = LSTM(256)(encoded_frames)
 
-        opt = Adam()
+        output = Dense(1, activation="sigmoid")(encoded_vid)
+        model = Model(inputs=[inp], outputs=output)
 
+        print(model.summary())
+
+        opt = Adam(lr = 1e-4, beta_1=0.9)
         model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
-
-
-
-    
-
-
 
     def train(self, generator, validation_data, model_fp, epochs=10, patience=5):
         if self.trained != False:
@@ -53,4 +50,11 @@ class Classifier(object):
         self.clf.load_weights(model_fp)
         self.history = history
         self.trained = True
+
+    def predict(self, generator):
+        y_true = [y for X, y in generator]
+        y_pred = self.clf.predict_generator(generator)
+        return y_true, y_pred
+
+
         
