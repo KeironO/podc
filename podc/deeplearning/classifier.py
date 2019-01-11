@@ -19,7 +19,7 @@ class Classifier(object):
     def build_clf(self):
         inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
         
-        cnn = InceptionV3(weights="imagenet", include_top="False", pooling="avg")
+        cnn = InceptionV3(weights="imagenet", include_top=False, pooling="avg", input_shape=(self.height, self.width, 3))
         cnn.trainable = False
 
         encoded_frames = TimeDistributed(Lambda(lambda x: cnn(x)))(inp)
@@ -28,8 +28,6 @@ class Classifier(object):
 
         output = Dense(1, activation="sigmoid")(encoded_vid)
         model = Model(inputs=[inp], outputs=output)
-
-        print(model.summary())
 
         opt = Adam(lr = 1e-4, beta_1=0.9)
         model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
