@@ -2,10 +2,12 @@ import imageio
 from PIL import Image
 import pandas as pd
 import os
+import random
 import sys
 from keras.utils import Sequence
 from keras.preprocessing.sequence import pad_sequences
 from keras_preprocessing.image import apply_affine_transform
+from scipy.ndimage.filters import gaussian_filter
 import numpy as np
 from keras import backend as K
 from joblib import Parallel, delayed, cpu_count
@@ -21,7 +23,7 @@ COL_AXIS = 1
 CHANNEL_AXIS = 2
 
 class VideoDataGenerator(Sequence):
-    def __init__(self, directory, filenames, labels, batch_size, shuffle=False, height=224, width=224, max_frames=50, featurewise_center=False, rotation_range=False, brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False, n_jobs=1):
+    def __init__(self, directory, filenames, labels, batch_size, shuffle=False, height=224, width=224, max_frames=50, featurewise_center=False, gaussian_blur=False, rotation_range=False, brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False, n_jobs=1):
         self.directory = directory
         self.filenames = filenames
         self.labels = labels
@@ -31,6 +33,7 @@ class VideoDataGenerator(Sequence):
         self.width = width
         self.max_frames = max_frames
         self.featurewise_center = featurewise_center
+        self.gaussian_blur = gaussian_blur
         self.rotation_range = rotation_range
         self.brightness_range = brightness_range
         self.shear_range = shear_range
@@ -89,6 +92,12 @@ class VideoDataGenerator(Sequence):
                 x[index] = apply_affine_transform(x[index], tx=tx, ty=ty, row_axis=ROW_AXIS, col_axis=COL_AXIS, channel_axis=CHANNEL_AXIS, fill_mode=fill_mode, cval=cval)
             return x
 
+        def __gaussian_blur(x):
+            rg = random.randint(0, self.gaussian_blur)
+            for index in range(x.shape[0]):
+                x[index] = gaussian_filter(x[index], rg)
+            return x
+
         def __random_zoom(x, zoom_range, fill_mode="nearest", cval=0.):
             zx, zy = np.random.uniform(zoom_range[0], zoom_range[1], 2)
             for index in range(x.shape[0]):
@@ -130,17 +139,24 @@ class VideoDataGenerator(Sequence):
                 logging.info("DATAUG !! FEATUREWISE CENTERING %s" % (filepath))
                 x = __featurewise_centre(x)
             
+            if self.gaussian_blur != False:
+                logging.info("DATAUG !! GAUSSIAN BLUR %s" % (filepath))
+                x = __gaussian_blur(x)
+
             if self.rotation_range != False:
                 logging.info("DATAUG !! RANDOM ROTATION %s" % (filepath))
                 x = ___random_rotation(x, self.rotation_range)
             
             if self.horizontal_flip != False:
                 logging.info("DATAUG !! HORIZONTAL FLIP %s" % (filepath))
-                x = __flip_axis(x, ROW_AXIS)
+                # coinflip
+                if random.randint(0, 1) == 1:
+                    x = __flip_axis(x, ROW_AXIS)
             
             if self.vertical_flip != False:
                 logging.info("DATAUG !! VERTICAL FLIP %s" % (filepath))
-                x = __flip_axis(x, COL_AXIS)
+                if random.randint(0, 1) == 1:
+                    x = __flip_axis(x, COL_AXIS)
 
             if self.shear_range != False:
                 logging.info("DATAUG !! SHEAR %s" % (filepath))

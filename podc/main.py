@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 
 filenames = filenames[0:4]
 
-dg = VideoDataGenerator(videos_dir, filenames, labels, 2, max_frames=max_frames, height=height, width=width, rotation_range=1, shear_range=1, n_jobs=-1)
+dg = VideoDataGenerator(videos_dir, filenames, labels, 2, max_frames=max_frames, height=height, width=width, gaussian_blur=3, horizontal_flip=True, rotation_range=20, shear_range=20, n_jobs=-1)
 
 for l in range(10):
     for X, y in dg:
@@ -39,6 +39,7 @@ for l in range(10):
             for j in range(d.shape[0]):
                 frames.append([plt.imshow(d[j])])
             ani = ArtistAnimation(fig, frames, interval=50)
+            plt.tight_layout()
             ani.save("/home/keo7/Pictures/test/lot%i-sample%i.mp4" % (l, i), fps=30)
             plt.close()
 
