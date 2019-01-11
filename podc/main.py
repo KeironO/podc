@@ -35,7 +35,7 @@ for train, test in LeaveOneOut().split(filenames):
     t, p = model.predict(tes_vdg)
     y_true.extend(t.tolist())
     y_pred.extend(p)
-    break
+    
 
 y_true = [item for sublist in y_true for item in sublist]
 y_pred = [int(item) for sublist in y_pred for item in sublist]
@@ -44,7 +44,6 @@ out_json_tmp = {
     "y_true" : y_true,
     "y_pred" : y_pred
 }
-
 
 with open("results.json", "w") as outfile:
     json.dump(out_json_tmp, outfile, indent=4)
