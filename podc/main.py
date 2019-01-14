@@ -1,6 +1,6 @@
 from data import VideoDataGenerator
 from deeplearning import Classifier
-from sklearn.model_selection import LeaveOneOut, train_test_split
+from sklearn.model_selection import LeaveOneOut, KFold, train_test_split
 import numpy as np
 from utils import get_labels, get_max_frames
 import os
@@ -31,7 +31,7 @@ class_weights = class_weight.compute_class_weight("balanced", np.unique(classes)
 y_true = []
 y_pred = []
 
-for train, test in LeaveOneOut().split(filenames):
+for train, test in KFold(10).split(filenames):
     train, val = train_test_split(train, train_size=0.9, test_size=0.1)
     tra_vdg = VideoDataGenerator(videos_dir, filenames[train], labels, 2, max_frames=max_frames, height=height, width=width, rotation_range=1, shear_range=1, n_jobs=-1)
     val_vdg = VideoDataGenerator(videos_dir, filenames[val], labels, 2, max_frames=max_frames, height=height, width=width, n_jobs=-1)
@@ -40,7 +40,7 @@ for train, test in LeaveOneOut().split(filenames):
     model = Classifier(width=width, height=height, max_frames=max_frames)
     model.train(tra_vdg, val_vdg, "/tmp/model.h5", class_weights, epochs=100, patience=20)
     t, p = model.predict(tes_vdg)
-    y_true.extend(t.tolist())
+    y_true.append(t)
     y_pred.extend(p)
     
 
