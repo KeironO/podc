@@ -32,7 +32,7 @@ y_true = []
 y_pred = []
 
 for train, test in LeaveOneOut().split(filenames):
-    train, val = train_test_split(train, train_size=0.8, test_size=0.2)
+    train, val = train_test_split(train, train_size=0.9, test_size=0.1)
     tra_vdg = VideoDataGenerator(videos_dir, filenames[train], labels, 2, max_frames=max_frames, height=height, width=width, rotation_range=1, shear_range=1, n_jobs=-1)
     val_vdg = VideoDataGenerator(videos_dir, filenames[val], labels, 2, max_frames=max_frames, height=height, width=width, n_jobs=-1)
     tes_vdg = VideoDataGenerator(videos_dir, filenames[test], labels, 8, max_frames=max_frames, height=height, width=width, n_jobs=-1)
