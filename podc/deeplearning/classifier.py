@@ -33,7 +33,7 @@ class Classifier(object):
         model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
 
-    def train(self, generator, validation_data, model_fp, epochs=10, patience=5):
+    def train(self, generator, validation_data, model_fp, class_weights, epochs=10, patience=5):
         if self.trained != False:
             raise Exception("!! ERROR !! THIS MODEL HAS ALREADY BEEN TRAINED!")
 
@@ -43,7 +43,7 @@ class Classifier(object):
         es = EarlyStopping(monitor="val_loss", verbose=1, patience=patience)
 
         history = self.clf.fit_generator(generator, epochs=epochs, callbacks=[hi, mc, es],
-                                    validation_data=validation_data, verbose=1)
+                                    validation_data=validation_data, verbose=1, class_weights=class_weights)
 
         self.clf.load_weights(model_fp)
         self.history = history
