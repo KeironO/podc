@@ -12,10 +12,15 @@ import numpy as np
 from keras import backend as K
 from joblib import Parallel, delayed, cpu_count
 from hurry.filesize import size
+from scipy.ndimage.filters import convolve
 
 # Logging details
 import logging
 #logging.basicConfig(format='%(asctime)s - %(message)s', stream=sys.stdout)
+
+import matplotlib.pyplot as plt
+from matplotlib.animation import ArtistAnimation
+
 
 
 ROW_AXIS = 0
@@ -92,6 +97,73 @@ class VideoDataGenerator(Sequence):
                 x[index] = apply_affine_transform(x[index], tx=tx, ty=ty, row_axis=ROW_AXIS, col_axis=COL_AXIS, channel_axis=CHANNEL_AXIS, fill_mode=fill_mode, cval=cval)
             return x
 
+        def __optical_flow(x, alpha=1e-5, n_iter=10):
+
+            def ___getdirvs(f1,f2, kX, kY, kT):
+                fX = convolve(f1, weights=kX) + convolve(f2, weights=kX)
+                fY = convolve(f1, weights=kY) + convolve(f2, weights=kY)
+
+                fT = convolve(f1, weights=kT) + convolve(f2, -kT)
+                return fX, fY, fT
+
+            # Hacky implementation of Hornschunck Optical Flow.
+            kH = np.array([[1/12, 1/6, 1/12],
+                            [1/6, 0.0, 1/6],
+                            [1/12, 1/6, 1/12]], float)
+
+            kX = np.array([[-1, 1], [-1, 1]]) * 0.25
+            kY = np.array([[-1, 1], [1, 1]]) * 0.25
+            kT = np.ones((2, 2,)) * 0.25
+
+            fig = plt.figure()
+            telluwhat = []
+
+            for frame in range(x.shape[0]):
+                frame1 = np.array(Image.fromarray(x[frame]).convert("I"))
+                try:
+                    frame2 = np.array(Image.fromarray(x[frame+1]).convert("I"))
+                except IndexError:
+                    break
+                u = np.zeros([self.width, self.height])
+                v = np.zeros([self.width, self.height])
+
+                fX, fY, fT = ___getdirvs(frame1, frame2, kX, kY, kT)
+                '''
+                fg = plt.figure(figsize=(18, 5))
+                ax = fg.subplots(1, 3)
+
+                for f, a, t in zip((fX, fY, fT), ax, ('$f_x$', '$f_y$', '$f_t$')):
+                    h = a.imshow(f, cmap="bwr")
+                    a.set_title(t)
+                    fg.colorbar(h, ax=a)
+
+                #plt.show()
+                plt.close()
+                '''
+
+                for i in range(n_iter):
+                    uA = convolve(u, kH)
+                    vA = convolve(v, kH)
+
+                    cD = ((fX * uA) + (fY*uA) + fT) / ((alpha**2) + (fX**2) + (fY**2))
+
+                    u = (uA - fX) * cD
+                    v = (vA - fY) * cD
+                
+                jef = np.square(u) + np.square(v)
+                telluwhat.append([plt.imshow(jef)])
+            ani = ArtistAnimation(fig, telluwhat, interval=50)
+            plt.tight_layout()
+            plt.show()
+
+
+
+
+                
+            exit(0)
+
+            return 0
+
         def __gaussian_blur(x):
             rg = random.randint(0, self.gaussian_blur)
             for index in range(x.shape[0]):
@@ -129,12 +201,13 @@ class VideoDataGenerator(Sequence):
             logging.info("DATALOAD !! LOADED %s SUCCESS (%s)" % (filepath, frame_size))
             return frames
         
-        X = np.zeros((len(filepaths), self.max_frames, self.width, self.height, 3), dtype="uint8")
+        X = np.zeros((len(filepaths), 50, self.width, self.height, 3), dtype="uint8")
         y = []
 
         def _do(filepath):
             x = ___read(filepath)
-
+            x = __gaussian_blur(x)
+            x = __optical_flow(x)
             if self.featurewise_center != False:
                 logging.info("DATAUG !! FEATUREWISE CENTERING %s" % (filepath))
                 x = __featurewise_centre(x)

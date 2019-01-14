@@ -20,19 +20,13 @@ height = 128
 
 filenames = np.array(os.listdir(videos_dir))
 
-y_true = []
-y_pred = []
-
 from matplotlib.animation import ArtistAnimation
 import matplotlib.pyplot as plt
 
-filenames = filenames[0:4]
+dg = VideoDataGenerator(videos_dir, filenames, labels, 1, max_frames=max_frames, height=height, width=width, n_jobs=-1, gaussian_blur=3)
 
-dg = VideoDataGenerator(videos_dir, filenames, labels, 2, max_frames=max_frames, height=height, width=width, gaussian_blur=3, horizontal_flip=True, rotation_range=20, shear_range=20, n_jobs=-1)
-
-for l in range(10):
-    for X, y in dg:
-        for i in range(X.shape[0]):
+for X, y in dg:
+    for i in range(X.shape[0]):
             d = X[i]
             frames = []
             fig = plt.figure()
@@ -40,11 +34,13 @@ for l in range(10):
                 frames.append([plt.imshow(d[j])])
             ani = ArtistAnimation(fig, frames, interval=50)
             plt.tight_layout()
-            ani.save("/home/keo7/Pictures/test/lot%i-sample%i.mp4" % (l, i), fps=30)
-            plt.close()
-
+            plt.show()
+    break
 
 exit(0)
+
+y_true = []
+y_pred = []
 
 for train, test in LeaveOneOut().split(filenames):
     train, val = train_test_split(train, train_size=0.8, test_size=0.2)
