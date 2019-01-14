@@ -2,6 +2,7 @@ import imageio
 from PIL import Image
 import pandas as pd
 import os
+from copy import deepcopy
 import random
 import sys
 from keras.utils import Sequence
@@ -12,7 +13,7 @@ import numpy as np
 from keras import backend as K
 from joblib import Parallel, delayed, cpu_count
 from hurry.filesize import size
-from scipy.ndimage.filters import convolve
+from scipy.signal import convolve2d
 
 # Logging details
 import logging
@@ -21,14 +22,12 @@ import logging
 import matplotlib.pyplot as plt
 from matplotlib.animation import ArtistAnimation
 
-
-
 ROW_AXIS = 0
 COL_AXIS = 1
 CHANNEL_AXIS = 2
 
 class VideoDataGenerator(Sequence):
-    def __init__(self, directory, filenames, labels, batch_size, shuffle=False, height=224, width=224, max_frames=50, featurewise_center=False, gaussian_blur=False, rotation_range=False, brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False, n_jobs=1):
+    def __init__(self, directory, filenames, labels, batch_size, shuffle=False, height=224, width=224, max_frames=50, optical_flow=False, featurewise_center=False, gaussian_blur=False, rotation_range=False, brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False, n_jobs=1):
         self.directory = directory
         self.filenames = filenames
         self.labels = labels
@@ -36,6 +35,7 @@ class VideoDataGenerator(Sequence):
         self.shuffle = shuffle
         self.height = height
         self.width = width
+        self.optical_flow = optical_flow
         self.max_frames = max_frames
         self.featurewise_center = featurewise_center
         self.gaussian_blur = gaussian_blur
@@ -97,72 +97,62 @@ class VideoDataGenerator(Sequence):
                 x[index] = apply_affine_transform(x[index], tx=tx, ty=ty, row_axis=ROW_AXIS, col_axis=COL_AXIS, channel_axis=CHANNEL_AXIS, fill_mode=fill_mode, cval=cval)
             return x
 
-        def __optical_flow(x, alpha=1e-5, n_iter=10):
-
-            def ___getdirvs(f1,f2, kX, kY, kT):
-                fX = convolve(f1, weights=kX) + convolve(f2, weights=kX)
-                fY = convolve(f1, weights=kY) + convolve(f2, weights=kY)
-
-                fT = convolve(f1, weights=kT) + convolve(f2, -kT)
-                return fX, fY, fT
-
-            # Hacky implementation of Hornschunck Optical Flow.
-            kH = np.array([[1/12, 1/6, 1/12],
-                            [1/6, 0.0, 1/6],
-                            [1/12, 1/6, 1/12]], float)
-
-            kX = np.array([[-1, 1], [-1, 1]]) * 0.25
-            kY = np.array([[-1, 1], [1, 1]]) * 0.25
-            kT = np.ones((2, 2,)) * 0.25
-
-            fig = plt.figure()
-            telluwhat = []
-
-            for frame in range(x.shape[0]):
-                frame1 = np.array(Image.fromarray(x[frame]).convert("I"))
+        def __optical_flow(x, window_size=4, tau=1e-5, mode="same"):
+            # Lucas-Kande method
+            for frame_index in range(x.shape[0]):
+                frame0 = x[frame_index]
                 try:
-                    frame2 = np.array(Image.fromarray(x[frame+1]).convert("I"))
+                    I2g = x[frame_index+1]
                 except IndexError:
                     break
-                u = np.zeros([self.width, self.height])
-                v = np.zeros([self.width, self.height])
+                kX = np.array([[-1., 1.], [-1., 1.]])
+                kY = np.array([[-1., -1.], [1., 1.]])
+                kT = np.array([[1., 1.], [1., 1.]])
+            
+                w = int(np.floor(window_size/2)) 
+                fxT = np.zeros((self.height, self.width, 3),dtype=float)
+                fyT = np.zeros((self.height,self.width, 3),dtype=float)
+                ftT = np.zeros((self.height,self.width, 3),dtype=float)
 
-                fX, fY, fT = ___getdirvs(frame1, frame2, kX, kY, kT)
-                '''
-                fg = plt.figure(figsize=(18, 5))
-                ax = fg.subplots(1, 3)
+                for channel_idx in range(3):
+                    fx = convolve2d(frame0[:,:,channel_idx], kX, boundary='symm', mode=mode)
+                    fy = convolve2d(frame0[:,:,channel_idx], kY, boundary='symm', mode=mode)
+                    ft = convolve2d(I2g[:,:,channel_idx], kT, boundary='symm', mode=mode) 
+                    ft += convolve2d(frame0[:,:,channel_idx], -kT, boundary='symm', mode=mode)
 
-                for f, a, t in zip((fX, fY, fT), ax, ('$f_x$', '$f_y$', '$f_t$')):
-                    h = a.imshow(f, cmap="bwr")
-                    a.set_title(t)
-                    fg.colorbar(h, ax=a)
-
-                #plt.show()
-                plt.close()
-                '''
-
-                for i in range(n_iter):
-                    uA = convolve(u, kH)
-                    vA = convolve(v, kH)
-
-                    cD = ((fX * uA) + (fY*uA) + fT) / ((alpha**2) + (fX**2) + (fY**2))
-
-                    u = (uA - fX) * cD
-                    v = (vA - fY) * cD
+                    fxT[:,:,channel_idx] = fx
+                    fyT[:,:,channel_idx] = fy
+                    ftT[:,:,channel_idx] = ft
                 
-                jef = np.square(u) + np.square(v)
-                telluwhat.append([plt.imshow(jef)])
-            ani = ArtistAnimation(fig, telluwhat, interval=50)
-            plt.tight_layout()
-            plt.show()
-
-
-
-
+                u = np.zeros((self.height, self.width))
+                v = np.zeros((self.height, self.width))
                 
-            exit(0)
+                for i in range(w, frame0.shape[0]-w):
+                    for j in range(w, frame0.shape[1]-w):
+                        Ix = fxT[i-w:i+w+1, j-w:j+w+1, :].flatten()
+                        Iy = fyT[i-w:i+w+1, j-w:j+w+1, :].flatten()
+                        It = ftT[i-w:i+w+1, j-w:j+w+1, :].flatten()
+                        b = np.reshape(It, (It.shape[0],1))
+                        A = np.vstack((Ix, Iy)).T
 
-            return 0
+                        nu = np.zeros((2,1))            
+                        if np.min(abs(np.linalg.eigvals(np.matmul(A.T, A)))) >= tau:
+                            nu = np.matmul(np.linalg.pinv(A), b)
+                        
+                        u[i,j]=nu[0]
+                        v[i,j]=nu[1]
+
+                mask = np.square(u)+np.square(v) == 0.0
+                rawX = x[frame_index]
+
+                for channel_idx in range(3):
+                    channel_X = rawX[:,:,channel_idx]
+                    m = np.ma.masked_array(data=channel_X, mask=mask, fill_value=0.0).filled()
+                    rawX[:,:,channel_idx] = m
+                
+                x[frame_index] = rawX
+
+            return x
 
         def __gaussian_blur(x):
             rg = random.randint(0, self.gaussian_blur)
@@ -201,13 +191,12 @@ class VideoDataGenerator(Sequence):
             logging.info("DATALOAD !! LOADED %s SUCCESS (%s)" % (filepath, frame_size))
             return frames
         
-        X = np.zeros((len(filepaths), 50, self.width, self.height, 3), dtype="uint8")
+        X = np.zeros((len(filepaths), self.max_frames, self.width, self.height, 3), dtype="uint8")
         y = []
 
         def _do(filepath):
             x = ___read(filepath)
-            x = __gaussian_blur(x)
-            x = __optical_flow(x)
+            
             if self.featurewise_center != False:
                 logging.info("DATAUG !! FEATUREWISE CENTERING %s" % (filepath))
                 x = __featurewise_centre(x)
@@ -241,7 +230,11 @@ class VideoDataGenerator(Sequence):
             if self.zoom_range != False:
                 logging.info("DATAUG !! HORIZONTAL FLIP %s" % (filepath))
                 x = __random_zoom(x, self.zoom_range)
-            
+
+            if self.optical_flow != False:   
+                logging.info("DATAUG !! OPTICAL FLOW %s" % (filepath))
+                x = __optical_flow(x, window_size=self.optical_flow)
+
             logging.info("RETURNING !! DATA %s (%s)" % (filepath, size(sys.getsizeof(x))))
 
             return x, self.labels["".join(os.path.splitext(os.path.basename(filepath)))]
