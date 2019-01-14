@@ -43,7 +43,7 @@ class Classifier(object):
         es = EarlyStopping(monitor="val_loss", verbose=1, patience=patience)
 
         history = self.clf.fit_generator(generator, epochs=epochs, callbacks=[hi, mc, es],
-                                    validation_data=validation_data, verbose=1, class_weights=class_weights)
+                                    validation_data=validation_data, verbose=1, class_weight=class_weights)
 
         self.clf.load_weights(model_fp)
         self.history = history
