@@ -9,7 +9,7 @@ from keras import backend as K
 import numpy as np
 
 class Classifier(object):
-    def __init__(self, height, width, clf, max_frames=10):
+    def __init__(self, height, width, max_frames, clf):
         self.max_frames = max_frames
         self.height = height
         self.width = width

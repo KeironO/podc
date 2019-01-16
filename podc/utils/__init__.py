@@ -1,6 +1,6 @@
 import os
 from .video import get_max_frames
-
+from .models import VGG19v1
 
 def get_labels(d):
     names = ["positive", "negative"]

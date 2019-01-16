@@ -2,7 +2,7 @@ from data import VideoDataGenerator
 from deeplearning import Classifier
 from sklearn.model_selection import LeaveOneOut, KFold, train_test_split
 import numpy as np
-from utils import get_labels, get_max_frames
+from utils import get_labels, get_max_frames, VGG19v1
 import os
 import json
 from collections import Counter
@@ -43,7 +43,9 @@ tra_vdg = VideoDataGenerator(videos_dir, train, labels, 2, max_frames=max_frames
 val_vdg = VideoDataGenerator(videos_dir, val, labels, 2, max_frames=max_frames, height=height, width=width, n_jobs=-1)
 tes_vdg = VideoDataGenerator(videos_dir, test, labels, 1, max_frames=max_frames, height=height, width=width, n_jobs=-1)
 
-model = Classifier(width=width, height=height, max_frames=max_frames)
+tmp_model = VGG19v1(max_frames, width, height, output_dir="/tmp/")
+
+model = Classifier(width=width, height=height, max_frames=max_frames, clf=tmp_model.model)
 model.train(tra_vdg, val_vdg, "/tmp/model.h5", class_weights, epochs=100, patience=20)
 y_true, y_pred = model.predict(tes_vdg) 
 
