@@ -9,13 +9,15 @@ from keras import backend as K
 import numpy as np
 
 class Classifier(object):
-    def __init__(self, height, width, max_frames=10):
+    def __init__(self, height, width, clf, max_frames=10):
         self.max_frames = max_frames
         self.height = height
         self.width = width
         self.trained = False
-        self.clf = self.build_clf()
+        self.clf = clf
+        #self.clf = self.build_clf()
 
+    '''
     def build_clf(self):
         inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
         
@@ -32,6 +34,7 @@ class Classifier(object):
         opt = Adam(lr = 1e-4, beta_1=0.9)
         model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
+    '''
 
     def train(self, generator, validation_data, model_fp, class_weights, epochs=10, patience=5):
         if self.trained != False:
@@ -50,8 +53,13 @@ class Classifier(object):
         self.trained = True
 
     def predict(self, generator):
-        y_true = [y for X, y in generator]
+        y_true = [y for _, y in generator]
         y_pred = self.clf.predict_generator(generator)
+        for index, pred in enumerate(y_pred):
+            if pred > 0.5:
+                y_pred[index] = 1
+            else:
+                y_pred[index] = 0
         return y_true, y_pred
 
 

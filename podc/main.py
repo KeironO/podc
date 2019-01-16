@@ -5,6 +5,7 @@ import numpy as np
 from utils import get_labels, get_max_frames
 import os
 import json
+from collections import Counter
 from sklearn.utils import class_weight
 
 home_dir = os.path.expanduser("~")
@@ -15,34 +16,36 @@ videos_dir = os.path.join(data_dir, "videos")
 with open(os.path.join(data_dir, "labels.json"), "r") as infile:
     labels = json.load(infile)
 
-
+def get_class_weights(y):
+    counter = Counter(y)
+    majority = max(counter.values())
+    return  {cls: float(majority/count) for cls, count in counter.items()}
 
 max_frames = 100
-width = 75
-height = 75
+width = 95
+height = 95
 
 filenames = np.array(os.listdir(videos_dir))
 
 classes = [x[1] for x in labels.items()]
 
-class_weights = class_weight.compute_class_weight("balanced", np.unique(classes), classes)
+class_weights = get_class_weights(classes)
 
+print(class_weights)
 
 y_true = []
 y_pred = []
-
-for train, test in KFold(10).split(filenames):
-    train, val = train_test_split(train, train_size=0.9, test_size=0.1)
-    tra_vdg = VideoDataGenerator(videos_dir, filenames[train], labels, 2, max_frames=max_frames, height=height, width=width, rotation_range=1, shear_range=1, n_jobs=-1)
-    val_vdg = VideoDataGenerator(videos_dir, filenames[val], labels, 2, max_frames=max_frames, height=height, width=width, n_jobs=-1)
-    tes_vdg = VideoDataGenerator(videos_dir, filenames[test], labels, 8, max_frames=max_frames, height=height, width=width, n_jobs=-1)
-
-    model = Classifier(width=width, height=height, max_frames=max_frames)
-    model.train(tra_vdg, val_vdg, "/tmp/model.h5", class_weights, epochs=100, patience=20)
-    t, p = model.predict(tes_vdg)
-    y_true.append(t)
-    y_pred.extend(p)
     
+train, test = train_test_split(filenames, train_size=0.8, test_size=0.2)
+val, test = train_test_split(test, train_size=0.5, test_size=0.5)
+
+tra_vdg = VideoDataGenerator(videos_dir, train, labels, 2, max_frames=max_frames, height=height, width=width, rotation_range=1, shear_range=1, n_jobs=-1)
+val_vdg = VideoDataGenerator(videos_dir, val, labels, 2, max_frames=max_frames, height=height, width=width, n_jobs=-1)
+tes_vdg = VideoDataGenerator(videos_dir, test, labels, 1, max_frames=max_frames, height=height, width=width, n_jobs=-1)
+
+model = Classifier(width=width, height=height, max_frames=max_frames)
+model.train(tra_vdg, val_vdg, "/tmp/model.h5", class_weights, epochs=100, patience=20)
+y_true, y_pred = model.predict(tes_vdg) 
 
 y_true = [item for sublist in y_true for item in sublist]
 y_pred = [int(item) for sublist in y_pred for item in sublist]
