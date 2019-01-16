@@ -1,4 +1,6 @@
 import os
+from .video import get_max_frames
+
 
 def get_labels(d):
     names = ["positive", "negative"]
