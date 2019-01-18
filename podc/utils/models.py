@@ -67,6 +67,55 @@ class VGG19v1(BaseModel):
         model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
 
+class SmolNet(BaseModel):
+
+    def generate_model(self):
+
+        base_model  = MobileNet(input_shape=(self.height,self.width,3), include_top=False)
+        x = base_model.output
+        x = GlobalAveragePooling2D()(x)
+        cnn_model = Model(inputs=base_model.input, outputs=x)
+    
+        model = Sequential()
+        model.add(TimeDistributed(cnn_model, input_shape=(self.max_frames, self.height, self.width, 3)))
+        model.add(TimeDistributed(Flatten()))
+    
+        model.add(LSTM(1, return_sequences=True))
+
+        opt = Adam(lr = 1e-4, beta_1=0.9)
+        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        return model
+
+
+class VGG16v1(BaseModel):
+    def generate_model(self):
+        inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
+
+        cnn = VGG16(weights="imagenet", include_top=False)
+        
+        for layer in cnn.layers:
+            layer.trainable = False
+
+        tdcnn = TimeDistributed(cnn)(inp)
+        tdcnn = TimeDistributed(Flatten())(tdcnn)
+        tdcnn = MaxPooling1D(pool_size=self.max_frames)(tdcnn)
+
+        tdcnn = Dropout(0.5)(tdcnn)
+        tdcnn = Dense(512, activation="relu")(tdcnn)
+
+        tdcnn = Flatten()(tdcnn)
+        tdcnn = Dropout(0.5)(tdcnn)
+
+        tdcnn = Dense(1, activation="softmax")(tdcnn)
+
+        model = Model(inputs=inp, outputs=tdcnn)
+        opt = Adam(lr = 1e-4, beta_1=0.9)
+        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        return model
+
+
+        
+
 class ResNet50v1(BaseModel):
     def generate_model(self):
         inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")

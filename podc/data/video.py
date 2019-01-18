@@ -5,6 +5,7 @@ import os
 from copy import deepcopy
 import random
 import sys
+from collections import Counter
 from keras.utils import Sequence
 from keras.preprocessing.sequence import pad_sequences
 from keras_preprocessing.image import apply_affine_transform
@@ -27,7 +28,7 @@ COL_AXIS = 1
 CHANNEL_AXIS = 2
 
 class VideoDataGenerator(Sequence):
-    def __init__(self, directory, filenames, labels, batch_size, shuffle=False, height=224, width=224, max_frames=50, optical_flow=False, featurewise_center=False, gaussian_blur=False, rotation_range=False, brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False, n_jobs=1):
+    def __init__(self, directory, filenames, labels, batch_size, shuffle=False, height=224, width=224, max_frames=50, optical_flow=False, upsample=False, featurewise_center=False, gaussian_blur=False, rotation_range=False, brightness_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False, n_jobs=1):
         self.directory = directory
         self.filenames = filenames
         self.labels = labels
@@ -37,6 +38,8 @@ class VideoDataGenerator(Sequence):
         self.width = width
         self.optical_flow = optical_flow
         self.max_frames = max_frames
+        if self.upsample == True:
+            self.upsample = upsample
         self.featurewise_center = featurewise_center
         self.gaussian_blur = gaussian_blur
         self.rotation_range = rotation_range
@@ -46,12 +49,35 @@ class VideoDataGenerator(Sequence):
         self.horizontal_flip = horizontal_flip
         self.vertical_flip = vertical_flip
         self.n_jobs = n_jobs
+
+        if self.upsample == True:
+            self._upsample()
         self._generate_filepaths()
         self.on_epoch_end()
 
     def _generate_filepaths(self):
         self.filepaths = [os.path.join(self.directory, x) for x in self.filenames]
 
+
+
+    def _upsample(self):
+        # This was written in a fit of extreme tiredness.
+        l = {}
+        for fn in self.filenames:
+            l[fn] = self.labels[fn]
+        counts = Counter([x[1] for x in l.items()])
+        smallest_class = min(counts.items(), key=lambda x: x[1]) 
+        largest_class = max(counts.items(), key=lambda x: x[1])
+        diff = largest_class[1] -  smallest_class[1]
+        
+        smol_boye = [x[0] for x in l.items() if x[1] == smallest_class[0]]
+
+        dups = self.filenames.tolist()
+
+        for _ in range(diff):
+            dups.append(random.choice(smol_boye))
+        
+        self.filenames = np.array(dups)
 
     def __len__(self):
         return int(np.floor(len(self.filepaths)/self.batch_size))

@@ -15,7 +15,7 @@ class Classifier(object):
         self.width = width
         self.trained = False
         self.clf = clf
-        #self.clf = self.build_clf()
+	        #self.clf = self.build_clf()
 
     '''
     def build_clf(self):
@@ -36,7 +36,7 @@ class Classifier(object):
         return model
     '''
 
-    def train(self, generator, validation_data, model_fp, class_weights=False, epochs=10, patience=5):
+    def train(self, generator, validation_data, model_fp, class_weights, epochs=10, patience=5):
         if self.trained != False:
             raise Exception("!! ERROR !! THIS MODEL HAS ALREADY BEEN TRAINED!")
 
@@ -44,13 +44,9 @@ class Classifier(object):
         mc = ModelCheckpoint(model_fp, monitor="val_loss", verbose=1, save_best_only=True)
 
         es = EarlyStopping(monitor="val_loss", verbose=1, patience=patience)
-        
-        if class_weights == False:
-            history = self.clf.fit_generator(generator, epochs=epochs, callbacks=[hi, mc, es],
-                                        validation_data=validation_data, verbose=1)
-        else:
-            history = self.clf.fit_generator(generator, epochs=epochs, callbacks=[hi, mc, es],
-                                        validation_data=validation_data, verbose=1, class_weight=class_weights)
+
+        history = self.clf.fit_generator(generator, epochs=epochs, callbacks=[hi, mc, es],
+                                    validation_data=validation_data, verbose=1, class_weight=class_weights)
 
         self.clf.load_weights(model_fp)
         self.history = history
