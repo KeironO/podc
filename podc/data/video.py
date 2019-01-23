@@ -38,7 +38,7 @@ class VideoDataGenerator(Sequence):
         self.width = width
         self.optical_flow = optical_flow
         self.max_frames = max_frames
-        if self.upsample == True:
+        if upsample == True:
             self.upsample = upsample
         self.featurewise_center = featurewise_center
         self.gaussian_blur = gaussian_blur
