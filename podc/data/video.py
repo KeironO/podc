@@ -58,8 +58,6 @@ class VideoDataGenerator(Sequence):
     def _generate_filepaths(self):
         self.filepaths = [os.path.join(self.directory, x) for x in self.filenames]
 
-
-
     def _upsample(self):
         # This was written in a fit of extreme tiredness.
         l = {}
