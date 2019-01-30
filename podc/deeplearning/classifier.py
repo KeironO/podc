@@ -16,26 +16,7 @@ class Classifier(object):
         self.trained = False
         self.clf = clf
         #self.clf = self.build_clf()
-
-    '''
-    def build_clf(self):
-        inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
-        
-        cnn = InceptionV3(weights="imagenet", include_top=False, pooling="avg", input_shape=(self.height, self.width, 3))
-        cnn.trainable = False
-
-        encoded_frames = TimeDistributed(Lambda(lambda x: cnn(x)))(inp)
-
-        encoded_vid = LSTM(256)(encoded_frames)
-
-        output = Dense(1, activation="sigmoid")(encoded_vid)
-        model = Model(inputs=[inp], outputs=output)
-
-        opt = Adam(lr = 1e-4, beta_1=0.9)
-        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
-        return model
-    '''
-
+    
     def train(self, generator, validation_data, model_fp, class_weights=False, epochs=10, patience=5):
         if self.trained != False:
             raise Exception("!! ERROR !! THIS MODEL HAS ALREADY BEEN TRAINED!")

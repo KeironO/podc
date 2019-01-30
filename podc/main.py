@@ -25,8 +25,8 @@ def get_class_weights(y):
     return  {cls: float(majority/count) for cls, count in counter.items()}
 
 max_frames = 100
-width = 95
-height = 95
+width = 64
+height = 64
 
 filenames = np.array(os.listdir(videos_dir))
 
@@ -55,6 +55,19 @@ model.train(tra_vdg, val_vdg, "/tmp/model.h5", epochs=100, patience=20)
 
 #model = load_model("/tmp/model.h5")
 y_true, y_pred = model.predict(tra_vdg) 
+
+X, y = fhc.load_data()
+
+idg = ImageDataGenerator(
+    rotation_range=90,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    zoom_range=0.2
+)
+
+for x, _y in idg.flow(X, y, batch_size=32):
+    print(x)
+    break
 
 y_true = [item for sublist in y_true for item in sublist]
 y_pred = [int(item) for sublist in y_pred for item in sublist]

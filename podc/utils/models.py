@@ -35,6 +35,25 @@ class BaseModel:
         raise Exception("This isn't to be called!")
 
 
+class VGG19Image(BaseModel):
+    def generate_model(self):
+        cnn = VGG19(include_top=False, weights="imagenet", input_shape=(self.height, self.width, 3))
+
+        x = Sequential()
+        x.add(GlobalAveragePooling2D(input_shape=cnn.output_shape[1:], data_format=None))
+        x.add(Dense(512, activation='relu'))
+        x.add(Dropout(0.5))
+        x.add(Dense(1, activation='sigmoid'))
+
+
+
+        model = Model(inputs=cnn.input, outputs=x(cnn.output))
+
+        opt = Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=1e-08,decay=0.0)
+        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        return model
+        
+
 class VGG19v1(BaseModel):
     def generate_model(self):
         inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
@@ -85,6 +104,95 @@ class SmolNet(BaseModel):
         opt = Adam(lr = 1e-4, beta_1=0.9)
         model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
+
+
+class VGG19FHC(BaseModel):
+    def generate_model(self):
+        '''
+            This is a bastardised version of VGG16, VGG19 is probably a bit too big to run on our hardware.
+
+            You can find U-net details online.
+            
+        '''
+        img_input = Input(shape=(self.height,self.width, 3))
+
+        x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1', data_format='channels_last' )(img_input)
+        x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2', data_format='channels_last' )(x)
+        x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool', data_format='channels_last' )(x)
+        f1 = x
+        # Block 2
+        x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1', data_format='channels_last' )(x)
+        x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2', data_format='channels_last' )(x)
+        x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool', data_format='channels_last' )(x)
+        f2 = x
+
+        # Block 3
+        x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1', data_format='channels_last' )(x)
+        x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2', data_format='channels_last' )(x)
+        x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3', data_format='channels_last' )(x)
+        x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool', data_format='channels_last' )(x)
+        f3 = x
+
+        # Block 4
+        x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1', data_format='channels_last' )(x)
+        x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2', data_format='channels_last' )(x)
+        x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3', data_format='channels_last' )(x)
+        x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool', data_format='channels_last' )(x)
+        f4 = x
+
+        # Block 5
+        x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1', data_format='channels_last' )(x)
+        x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2', data_format='channels_last' )(x)
+        x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3', data_format='channels_last' )(x)
+        x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool', data_format='channels_last' )(x)
+        f5 = x
+
+        x = Flatten(name='flatten')(x)
+        x = Dense(4096, activation='relu', name='fc1')(x)
+        x = Dense(4096, activation='relu', name='fc2')(x)
+        x = Dense( 1000 , activation='softmax', name='predictions')(x)
+
+        vgg  = Model(  img_input , x  )
+
+        levels = [f1 , f2 , f3 , f4 , f5 ]
+
+        o = levels[3]
+        
+        o = ( ZeroPadding2D( (1,1) , data_format='channels_last' ))(o)
+        o = ( Conv2D(512, (3, 3), padding='valid', data_format='channels_last'))(o)
+        o = ( BatchNormalization())(o)
+
+        o = ( UpSampling2D( (2,2), data_format='channels_last'))(o)
+        o = ( ZeroPadding2D( (1,1), data_format='channels_last'))(o)
+        o = ( Conv2D( 256, (3, 3), padding='valid', data_format='channels_last'))(o)
+        o = ( BatchNormalization())(o)
+
+        o = ( UpSampling2D((2,2)  , data_format='channels_last' ) )(o)
+        o = ( ZeroPadding2D((1,1) , data_format='channels_last' ))(o)
+        o = ( Conv2D( 128 , (3, 3), padding='valid' , data_format='channels_last' ))(o)
+        o = ( BatchNormalization())(o)
+
+        o = ( UpSampling2D((2,2)  , data_format='channels_last' ))(o)
+        o = ( ZeroPadding2D((1,1)  , data_format='channels_last' ))(o)
+        o = ( Conv2D( 64 , (3, 3), padding='valid'  , data_format='channels_last' ))(o)
+        o = ( BatchNormalization())(o)
+
+
+        o =  Conv2D( 10 , (3, 3) , padding='same', data_format='channels_last' )( o )
+        o_shape = Model(img_input , o ).output_shape
+        outputHeight = o_shape[2]
+        outputWidth = o_shape[3]
+
+        o = (Reshape((  -1  , outputHeight*outputWidth   )))(o)
+        o = (Permute((2, 1)))(o)
+        o = (Activation('softmax'))(o)
+        model = Model( img_input , o )
+        model.outputWidth = outputWidth
+        model.outputHeight = outputHeight
+        model.compile(loss="categorical_crossentropy", optimizer="adadelta", metrics=["accuracy"])
+
+        return model
+
 
 
 class VGG16v1(BaseModel):
