@@ -13,9 +13,9 @@ from keras.utils import plot_model
 
 class BaseModel:
     def __init__(self, max_frames, height, width, output_dir, n_channels=3, output_type="categorical"):
-        self.max_frames = max_frames
-        self.height = height
-        self.width = width
+        self.max_frames = int(max_frames)
+        self.height = int(height)
+        self.width = int(width)
         self.output_dir = output_dir
         self.model_fp = os.path.join(output_dir, "base_model.h5")
         if os.path.isfile(self.model_fp):
@@ -178,10 +178,10 @@ class VGG19FHC(BaseModel):
         o = ( BatchNormalization())(o)
 
 
-        o =  Conv2D( 10 , (3, 3) , padding='same', data_format='channels_last' )( o )
+        o =  Conv2D( 2 , (3, 3) , padding='same', data_format='channels_last' )( o )
         o_shape = Model(img_input , o ).output_shape
-        outputHeight = o_shape[2]
-        outputWidth = o_shape[3]
+        outputHeight = o_shape[1]
+        outputWidth = o_shape[2]
 
         o = (Reshape((  -1  , outputHeight*outputWidth   )))(o)
         o = (Permute((2, 1)))(o)
