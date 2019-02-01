@@ -16,16 +16,13 @@ ids = pd.read_csv(os.path.join(data_dir, "training.csv"), index_col=0).index.val
 
 ids = np.array([x.split(".")[0] for x in ids])
 
-fhc = FHCDataGenerator(data_dir, ids, _HEIGHT*scale, _WIDTH*scale, _HEIGHT*scale, _WIDTH*scale)
 
-for X, y in fhc:
-    break
+clf = VGG19FHC(0, int(_HEIGHT*scale), int(_WIDTH*scale), "/tmp/").model
 
-#clf = VGG19FHC(0, int(_HEIGHT*scale), int(_WIDTH*scale), "/tmp/").model
+fhc = FHCDataGenerator(data_dir, ids, _HEIGHT*scale, _WIDTH*scale, clf.outputHeight, clf.outputWidth)
 
+clf.fit_generator(fhc, epochs=0)
 
-#clf.fit_generator(fhc, epochs=10)
-'''
 import random
 
 colors = [  ( random.randint(0,255),random.randint(0,255),random.randint(0,255)   ) for _ in range(2)  ]
@@ -35,7 +32,7 @@ import matplotlib.pyplot as plt
 for X, _ in fhc:
     y_pred = clf.predict(X)[0]
 
-    y_pred = y_pred.reshape(clf.outputHeight, clf.outputWidth, 2).argmax( axis = 2)
+    y_pred = y_pred.reshape(clf.outputHeight, clf.outputWidth).argmax( axis = 2)
     seg_img = np.zeros((clf.outputHeight, clf.outputWidth, 3))
 
     for c in range(2):
@@ -48,4 +45,3 @@ for X, _ in fhc:
     plt.show()
 
     break
-'''

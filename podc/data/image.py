@@ -47,64 +47,29 @@ class FHCDataGenerator(Sequence):
 
             def __colour_elipsoid(img):
                 img = np.array(img)
+                img = (img == 255).astype(int)
 
-                img = (img == 255)
 
-                _h = img.shape[0]
-                _w = img.shape[1]
-
-                new_img = np.zeros((_h, _w))
+                return np.array(np.maximum.accumulate(img, 1) & np.maximum.accumulate(img[:, ::-1], 1)[:, ::-1])
 
 
 
-                for x in range(_h):
-                    to_fill = False
-                    for y in range(_w):
-                        val = img[x, y]
-                        if val:
-                            new_val = val
-                            if to_fill:
-                               to_fill = False
-                            else:
-                                to_fill = True
-                        else:
-                            if to_fill:
-                                new_val = True
-                            else:
-                                new_val = False
-                        new_img[x, y] = new_val
-                        
 
-                                     
-                       
-
-                import matplotlib.pyplot as plt
-
-                plt.figure()
-                plt.imshow(new_img)
-                plt.show()
-                exit(0)
-                return img
-            print(identifier)
 
             fp = os.path.join(self.data_dir, identifier + "_Annotation.png")
             img = Image.open(fp)
             img = __colour_elipsoid(img)
-            #img = img.resize((self.output_width, self.output_height))
 
-            import matplotlib.pyplot as plt
+            img = Image.fromarray(img.astype("uint8"))
 
-            plt.figure()
-            plt.imshow(img)
-            plt.show()
-            exit(0)
+            img = img.resize((self.output_width, self.output_height))
 
             o = np.zeros((2, self.output_width, self.output_height))
 
             for i in range(2):
                 o[i] = (img == i)
 
-            img = np.array(o).reshape(self.output_width*self.output_height, 2) / 255.0
+            img = np.array(o).reshape(self.output_width*self.output_height, 2)
 
             return img
 

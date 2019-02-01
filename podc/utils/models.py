@@ -178,7 +178,7 @@ class VGG19FHC(BaseModel):
         o = ( BatchNormalization())(o)
 
 
-        o =  Conv2D( 2 , (3, 3) , padding='same', data_format='channels_last' )( o )
+        o =  Conv2D( 1 , (3, 3) , padding='same', data_format='channels_last' )( o )
         o_shape = Model(img_input , o ).output_shape
         outputHeight = o_shape[1]
         outputWidth = o_shape[2]
