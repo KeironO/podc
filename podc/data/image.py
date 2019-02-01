@@ -49,11 +49,7 @@ class FHCDataGenerator(Sequence):
                 img = np.array(img)
                 img = (img == 255).astype(int)
 
-
                 return np.array(np.maximum.accumulate(img, 1) & np.maximum.accumulate(img[:, ::-1], 1)[:, ::-1])
-
-
-
 
 
             fp = os.path.join(self.data_dir, identifier + "_Annotation.png")
