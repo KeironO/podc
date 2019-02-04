@@ -21,11 +21,11 @@ val, test = train_test_split(test, train_size=0.5)
 
 clf = VGG19FHC(0, _HEIGHT, _WIDTH, "/tmp/").model
 
-fhc_train = FHCDataGenerator(data_dir, train, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
+fhc_train = FHCDataGenerator(data_dir, train, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH, rotation_range=0.2, shear_range=0.2, zoom_range=0.2, horizontal_flip=True, vertical_flip=True)
 fhc_val = FHCDataGenerator(data_dir, val, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
 fhc_test = FHCDataGenerator(data_dir, test, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
 
-#clf.fit_generator(fhc, epochs=100, validation_data=fhc_val)
+clf.fit_generator(fhc_train, epochs=100, validation_data=fhc_val)
 
 for X, y_true in fhc_test:
     y_pred = clf.predict(X)[0]
