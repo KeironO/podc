@@ -58,14 +58,15 @@ class FHCDataGenerator(Sequence):
 
             img = Image.fromarray(img.astype("uint8"))
 
-            img = img.resize((self.output_width, self.output_height))
+            img = np.array(img.resize((self.output_width, self.output_height)))
 
-            o = np.zeros((2, self.output_width, self.output_height))
+            o = np.zeros((self.output_width, self.output_height, 2))
 
             for i in range(2):
-                o[i] = (img == i)
+                o[:, :, i] = (img == i)
 
-            img = np.array(o).reshape(self.output_width*self.output_height, 2)
+            img = np.array(o)
+            # .reshape(self.output_width*self.output_height, 2)
 
             return img
 

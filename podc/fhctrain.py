@@ -3,45 +3,39 @@ import pandas as pd
 import os
 import numpy as np
 from utils import VGG19FHC
-
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
 
 data_dir = "/home/keo7/Data/FHC/training_set"
 
-_WIDTH = 800
-_HEIGHT = 540
-
-scale = 0.25
+_WIDTH = 224
+_HEIGHT = 224
 
 ids = pd.read_csv(os.path.join(data_dir, "training.csv"), index_col=0).index.values
 
 ids = np.array([x.split(".")[0] for x in ids])
 
+train, test = train_test_split(ids, train_size=0.8)
 
-clf = VGG19FHC(0, int(_HEIGHT*scale), int(_WIDTH*scale), "/tmp/").model
+val, test = train_test_split(test, train_size=0.5)
 
-fhc = FHCDataGenerator(data_dir, ids, _HEIGHT*scale, _WIDTH*scale, clf.outputHeight, clf.outputWidth)
+clf = VGG19FHC(0, _HEIGHT, _WIDTH, "/tmp/").model
 
-clf.fit_generator(fhc, epochs=0)
+fhc_train = FHCDataGenerator(data_dir, train, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
+fhc_val = FHCDataGenerator(data_dir, val, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
+fhc_test = FHCDataGenerator(data_dir, test, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
 
-import random
+#clf.fit_generator(fhc, epochs=100, validation_data=fhc_val)
 
-colors = [  ( random.randint(0,255),random.randint(0,255),random.randint(0,255)   ) for _ in range(2)  ]
-
-import matplotlib.pyplot as plt
-
-for X, _ in fhc:
+for X, y_true in fhc_test:
     y_pred = clf.predict(X)[0]
 
-    y_pred = y_pred.reshape(clf.outputHeight, clf.outputWidth).argmax( axis = 2)
-    seg_img = np.zeros((clf.outputHeight, clf.outputWidth, 3))
-
-    for c in range(2):
-        seg_img[:,:,0] += ( (y_pred[:,: ] == c )*( colors[c][0] )).astype('uint8')
-        seg_img[:,:,1] += ((y_pred[:,: ] == c )*( colors[c][1] )).astype('uint8')
-        seg_img[:,:,2] += ((y_pred[:,: ] == c )*( colors[c][2] )).astype('uint8')
-
-    plt.figure()
-    plt.imshow(seg_img[:,:,0])
+    fig, axs = plt.subplots(figsize=[15,8], ncols=3)
+    axs[0].imshow(y_pred[:, :, 0])
+    axs[1].imshow(X[0][:, :, 0])
+    axs[2].imshow(y_true[0][:, :, 0])
+    plt.tight_layout()
     plt.show()
 
+    
     break
