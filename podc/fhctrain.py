@@ -10,8 +10,8 @@ from keras.models import load_model
 
 data_dir = "/home/keo7/Data/FHC/training_set"
 
-_WIDTH = 128
-_HEIGHT = 128
+_WIDTH = 224
+_HEIGHT = 224
 
 ids = pd.read_csv(os.path.join(data_dir, "training.csv"), index_col=0).index.values
 
@@ -29,11 +29,11 @@ fhc_val = FHCDataGenerator(data_dir, val, _HEIGHT, _WIDTH)
 fhc_test = FHCDataGenerator(data_dir, test, _HEIGHT, _WIDTH)
 
 # Callbacks
-es = EarlyStopping(monitor="val_loss", min_delta=0, patience=20, verbose=0, mode="auto", baseline=None, restore_best_weights=False)
+es = EarlyStopping(monitor="val_loss", min_delta=0, patience=35, verbose=0, mode="auto", baseline=None, restore_best_weights=False)
 mc = ModelCheckpoint("/tmp/best.md5", monitor="val_loss", verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
 # Do the training
-clf.fit_generator(fhc_train, epochs=100, validation_data=fhc_val, callbacks=[es, mc])
+clf.fit_generator(fhc_train, epochs=1000, validation_data=fhc_val, callbacks=[es, mc])
 # Load best models
 clf = load_model("/tmp/best.md5")
 
