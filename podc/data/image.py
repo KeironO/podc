@@ -120,7 +120,7 @@ class FHCDataGenerator(Sequence):
 
         for indx, identifier in enumerate(identifiers):
             x = _load_image(identifier)
-            _y = _load_annotations(identifier))
+            _y = _load_annotations(identifier)
 
             if self.rotation_range != False:
                 x, y = __random_rotation(x, y, self.rotation_range)
