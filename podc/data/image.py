@@ -17,9 +17,7 @@ class FHCDataGenerator(Sequence):
         self.shuffle = shuffle
 
         # Transformation stuff
-
         self.rotation_range = rotation_range
-        self.brightness_range = brightness_range
         self.shear_range = shear_range
         self.zoom_range = zoom_range
         self.horizontal_flip = horizontal_flip
