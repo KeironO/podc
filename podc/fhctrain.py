@@ -17,36 +17,50 @@ ids = pd.read_csv(os.path.join(data_dir, "training.csv"), index_col=0).index.val
 
 ids = np.array([x.split(".")[0] for x in ids])
 
-train, test = train_test_split(ids, train_size=0.7)
+train, test = train_test_split(ids, train_size=0.9)
 
 val, test = train_test_split(test, train_size=0.5)
 
 clf = VGG19FHC(0, _HEIGHT, _WIDTH, "/tmp/").model
 
-fhc_train = FHCDataGenerator(data_dir, train, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH, rotation_range=0.2, shear_range=0.2, zoom_range=0.2, horizontal_flip=True, vertical_flip=True)
-fhc_val = FHCDataGenerator(data_dir, val, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
-fhc_test = FHCDataGenerator(data_dir, test, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
-
+# Data Generators
+fhc_train = FHCDataGenerator(data_dir, train, _HEIGHT, _WIDTH, zoom_range=.8, horizontal_flip=True, vertical_flip=True, shear_range=0.8, rotation_range=0.8)
+fhc_val = FHCDataGenerator(data_dir, val, _HEIGHT, _WIDTH)
+fhc_test = FHCDataGenerator(data_dir, test, _HEIGHT, _WIDTH)
 
 # Callbacks
-
 es = EarlyStopping(monitor="val_loss", min_delta=0, patience=20, verbose=0, mode="auto", baseline=None, restore_best_weights=False)
 mc = ModelCheckpoint("/tmp/best.md5", monitor="val_loss", verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
-
+# Do the training
 clf.fit_generator(fhc_train, epochs=100, validation_data=fhc_val, callbacks=[es, mc])
+# Load best models
 clf = load_model("/tmp/best.md5")
 
+# Cheap Evaluator
 count = 0
-
 for X, y_true in fhc_test:
-    y_pred = clf.predict(X)[0]
+    y_pred = clf.predict(X)
+    for indx, y_p in enumerate(y_pred):
+        fig, axs = plt.subplots(figsize=[20,5], ncols=4)
 
-    fig, axs = plt.subplots(figsize=[15,8], ncols=3)
-    axs[0].imshow(y_pred[:, :, 0])
-    axs[1].imshow(X[0][:, :, 0])
-    axs[2].imshow(y_true[0][:, :, 0])
-    plt.tight_layout()
-    plt.savefig("/tmp/%i.png" % count)
+        axs[0].imshow(X[indx][:, :, 1])
+        axs[0].axis("off")
+        axs[0].set_title("Input Data")
 
-    count += 1
+        axs[1].imshow(y_true[indx][:, :, 1])
+        axs[1].axis("off")
+        axs[1].set_title("Segmentation Ground Truth")
+
+        axs[2].imshow(y_p[:, :, 1])
+        axs[2].axis("off")
+        axs[2].set_title("Segmentation Prediction")
+
+        axs[3].imshow(y_p[:, :, 1] >= np.percentile(y_p[:, :, 1], 80))
+        axs[3].axis("off")
+        axs[3].set_title("Segmentation Prediction (80%)")
+
+        plt.tight_layout()
+        plt.savefig("/tmp/%i.png" % count)
+        plt.clf()
+        count += 1

@@ -6,13 +6,11 @@ from keras_preprocessing.image import apply_affine_transform
 import random
 
 class FHCDataGenerator(Sequence):
-    def __init__(self, data_dir, ids, height, width, output_height, output_width, batch_size=32, shuffle=True, rotation_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False):
+    def __init__(self, data_dir, ids, height, width,  batch_size=32, shuffle=True, rotation_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False):
         self.data_dir = data_dir
         self.ids = ids
         self.height = int(height)
         self.width = int(width)
-        self.output_height = int(output_height)
-        self.output_width = int(output_width)
         self.batch_size = batch_size
         self.shuffle = shuffle
 
@@ -78,7 +76,7 @@ class FHCDataGenerator(Sequence):
             return np.array(img)
 
         def __random_zoom(x, y, zoom_range, fill_mode="nearest", cval=0.):
-            zx, zy = np.random.uniform(zoom_range[0], zoom_range[1], 2)
+            zx, zy = np.random.uniform(zoom_range, zoom_range+1, 2)
             x = apply_affine_transform(x, zx=zx, zy=zy, row_axis=0, col_axis=1, channel_axis=2, fill_mode=fill_mode, cval=cval)
             y = apply_affine_transform(y, zx=zx, zy=zy, row_axis=0, col_axis=1, channel_axis=2, fill_mode=fill_mode, cval=cval)
             return x, y
@@ -104,9 +102,9 @@ class FHCDataGenerator(Sequence):
 
             img = Image.fromarray(img.astype("uint8"))
 
-            img = np.array(img.resize((self.output_width, self.output_height)))
+            img = np.array(img.resize((self.width, self.height)))
 
-            o = np.zeros((self.output_width, self.output_height, 2))
+            o = np.zeros((self.width, self.height, 2))
             # On the assumption that I'm only interested in /only/ the black and white segmentation.
             for i in range(2):
                 o[:, :, i] = (img == i)
@@ -129,7 +127,7 @@ class FHCDataGenerator(Sequence):
                 x, _y = __random_shear(x, _y, self.shear_range)
 
             if self.zoom_range != False:
-                x, _y = __random_zoom(x, _y, [0, self.zoom_range])
+                x, _y = __random_zoom(x, _y, self.zoom_range)
 
             if self.horizontal_flip != False:
                 if random.randint(0, 1) == 1:
