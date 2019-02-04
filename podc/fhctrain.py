@@ -5,17 +5,19 @@ import numpy as np
 from utils import VGG19FHC
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+from keras.callbacks import *
+from keras.models import load_model
 
 data_dir = "/home/keo7/Data/FHC/training_set"
 
-_WIDTH = 224
-_HEIGHT = 224
+_WIDTH = 128
+_HEIGHT = 128
 
 ids = pd.read_csv(os.path.join(data_dir, "training.csv"), index_col=0).index.values
 
 ids = np.array([x.split(".")[0] for x in ids])
 
-train, test = train_test_split(ids, train_size=0.8)
+train, test = train_test_split(ids, train_size=0.7)
 
 val, test = train_test_split(test, train_size=0.5)
 
@@ -25,7 +27,17 @@ fhc_train = FHCDataGenerator(data_dir, train, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH, 
 fhc_val = FHCDataGenerator(data_dir, val, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
 fhc_test = FHCDataGenerator(data_dir, test, _HEIGHT, _WIDTH, _HEIGHT, _WIDTH)
 
-clf.fit_generator(fhc_train, epochs=100, validation_data=fhc_val)
+
+# Callbacks
+
+es = EarlyStopping(monitor="val_loss", min_delta=0, patience=20, verbose=0, mode="auto", baseline=None, restore_best_weights=False)
+mc = ModelCheckpoint("/tmp/best.md5", monitor="val_loss", verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
+
+
+clf.fit_generator(fhc_train, epochs=100, validation_data=fhc_val, callbacks=[es, mc])
+clf = load_model("/tmp/best.md5")
+
+count = 0
 
 for X, y_true in fhc_test:
     y_pred = clf.predict(X)[0]
@@ -35,7 +47,6 @@ for X, y_true in fhc_test:
     axs[1].imshow(X[0][:, :, 0])
     axs[2].imshow(y_true[0][:, :, 0])
     plt.tight_layout()
-    plt.show()
+    plt.savefig("/tmp/%i.png" % count)
 
-    
-    break
+    count += 1

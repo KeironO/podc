@@ -121,7 +121,7 @@ class VGG19FHC(BaseModel):
         x = Conv2D(filters=2, kernel_size=(1,1))(cnn.output)
         x = Conv2DTranspose(filters=2, kernel_size=(64, 64), strides=(32, 32), padding="same", activation="sigmoid")(x)
 
-        model= Model(inputs=img_input, outputs = x )
+        model = Model(inputs=img_input, outputs = x )
 
        
         for layer in model.layers[:15]:
