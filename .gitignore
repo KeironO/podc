@@ -115,5 +115,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-.results/
-vscode/
+results/
+.vscode/
