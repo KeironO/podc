@@ -46,8 +46,10 @@ class FHCDataGenerator(Sequence):
 
         def __random_rotation(x, y, rg, fill_mode="nearest", cval=0., interpolation_order=1):
             theta = np.random.uniform(-rg, rg)
-            x = apply_affine_transform(x, theta=theta, row_axis=0, col_axis=1, channel_axis=2, fill_mode=fill_mode, cval=cval)
+            x = apply_affine_transform(x, theta=theta, fill_mode=fill_mode, cval=cval)
             y = apply_affine_transform(y, theta=theta, row_axis=0, col_axis=1, channel_axis=2, fill_mode=fill_mode, cval=cval)
+
+            return x, y
 
         def __flip_axis(x, y, axis):
             x = x.swapaxes(axis, 0)
@@ -121,23 +123,24 @@ class FHCDataGenerator(Sequence):
             _y = _load_annotations(identifier)
 
             if self.rotation_range != False:
-                x, y = __random_rotation(x, y, self.rotation_range)
+                x, _y = __random_rotation(x, _y, self.rotation_range)
             
             if self.shear_range != False:
-                x, y = __random_shear(x, y, self.shear_range)
+                x, _y = __random_shear(x, _y, self.shear_range)
 
             if self.zoom_range != False:
-                x, y = __random_zoom(x, y, self.zoom_range)
+                x, _y = __random_zoom(x, _y, [0, self.zoom_range])
 
             if self.horizontal_flip != False:
                 if random.randint(0, 1) == 1:
-                    x, y = __flip_axis(x, y, 1)
+                    x, _y = __flip_axis(x, _y, 1)
             
             if self.vertical_flip != False:
                 if random.randint(0, 1) == 1:
-                    x, y = __flip_axis(x, y, 0)
+                    x, _y = __flip_axis(x, _y, 0)
             
-            x[indx] = x
+
+            X[indx] = x
             y.append(_y)
 
         return X, np.array(y)
