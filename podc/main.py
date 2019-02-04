@@ -65,10 +65,6 @@ idg = ImageDataGenerator(
     zoom_range=0.2
 )
 
-for x, _y in idg.flow(X, y, batch_size=32):
-    print(x)
-    break
-
 y_true = [item for sublist in y_true for item in sublist]
 y_pred = [int(item) for sublist in y_pred for item in sublist]
 

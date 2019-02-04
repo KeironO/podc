@@ -8,16 +8,20 @@ import matplotlib.pyplot as plt
 from keras.callbacks import *
 from keras.models import load_model
 
-data_dir = "/home/keo7/Data/FHC/training_set"
+home_dir = os.path.expanduser("~")
 
-_WIDTH = 224
-_HEIGHT = 224
+data_dir = os.path.join(home_dir, "Data/FHC/training_set")
+
+results_dir = os.path.join(home_dir, "Data/FHC/results")
+
+_WIDTH = 64
+_HEIGHT = 64
 
 ids = pd.read_csv(os.path.join(data_dir, "training.csv"), index_col=0).index.values
 
 ids = np.array([x.split(".")[0] for x in ids])
 
-train, test = train_test_split(ids, train_size=0.9)
+train, test = train_test_split(ids, train_size=0.8)
 
 val, test = train_test_split(test, train_size=0.5)
 
@@ -28,14 +32,17 @@ fhc_train = FHCDataGenerator(data_dir, train, _HEIGHT, _WIDTH, zoom_range=.8, ho
 fhc_val = FHCDataGenerator(data_dir, val, _HEIGHT, _WIDTH)
 fhc_test = FHCDataGenerator(data_dir, test, _HEIGHT, _WIDTH)
 
+model_fp = os.path.join(results_dir, "best_model.md5")
+
 # Callbacks
 es = EarlyStopping(monitor="val_loss", min_delta=0, patience=35, verbose=0, mode="auto", baseline=None, restore_best_weights=False)
-mc = ModelCheckpoint("/tmp/best.md5", monitor="val_loss", verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
+mc = ModelCheckpoint(model_fp, monitor="val_loss", verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
 # Do the training
-clf.fit_generator(fhc_train, epochs=1000, validation_data=fhc_val, callbacks=[es, mc])
+clf.fit_generator(fhc_train, epochs=10000, validation_data=fhc_val, callbacks=[es, mc])
+
 # Load best models
-clf = load_model("/tmp/best.md5")
+clf = load_model(model_fp)
 
 # Cheap Evaluator
 count = 0
@@ -61,6 +68,6 @@ for X, y_true in fhc_test:
         axs[3].set_title("Segmentation Prediction (80%)")
 
         plt.tight_layout()
-        plt.savefig("/tmp/%i.png" % count)
+        plt.savefig("%s/pred_%i.png" % (results_dir, count))
         plt.clf()
         count += 1
