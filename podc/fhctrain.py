@@ -1,5 +1,6 @@
 from data import FHCDataGenerator
 import pandas as pd
+import json
 import os
 import numpy as np
 from utils import VGG19FHC
@@ -14,8 +15,8 @@ data_dir = os.path.join(home_dir, "Data/FHC/training_set")
 
 results_dir = os.path.join(home_dir, "Data/FHC/results")
 
-_WIDTH = 64
-_HEIGHT = 64
+_WIDTH = 128
+_HEIGHT = 128
 
 ids = pd.read_csv(os.path.join(data_dir, "training.csv"), index_col=0).index.values
 
@@ -39,7 +40,12 @@ es = EarlyStopping(monitor="val_loss", min_delta=0, patience=35, verbose=0, mode
 mc = ModelCheckpoint(model_fp, monitor="val_loss", verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=1)
 
 # Do the training
-clf.fit_generator(fhc_train, epochs=10000, validation_data=fhc_val, callbacks=[es, mc])
+history = clf.fit_generator(fhc_train, epochs=1000, validation_data=fhc_val, callbacks=[es, mc])
+
+history_fp = os.path.join(results_dir, "history.json")
+
+with open(history_fp, "w") as outfile:
+    json.dump(history.history, outfile, indent=4)
 
 # Load best models
 clf = load_model(model_fp)
