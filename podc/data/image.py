@@ -1,16 +1,18 @@
-from keras.utils import Sequence
+from keras.utils import Sequence, to_categorical
 import os
 import numpy as np
 from PIL import Image
 from keras_preprocessing.image import apply_affine_transform
 import random
+         
 
 class FHCDataGenerator(Sequence):
-    def __init__(self, data_dir, ids, height, width,  batch_size=32, shuffle=True, rotation_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False):
+    def __init__(self, data_dir, ids, height, width, n_classes, batch_size=32, shuffle=True, rotation_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False):
         self.data_dir = data_dir
         self.ids = ids
         self.height = int(height)
         self.width = int(width)
+        self.n_classes = n_classes
         self.batch_size = batch_size
         self.shuffle = shuffle
 
@@ -104,9 +106,9 @@ class FHCDataGenerator(Sequence):
 
             img = np.array(img.resize((self.width, self.height)))
 
-            o = np.zeros((self.width, self.height, 2))
-            # On the assumption that I'm only interested in /only/ the black and white segmentation.
-            for i in range(2):
+            o = np.zeros((self.width, self.height, self.n_classes))
+        
+            for i in range(self.n_classes):
                 o[:, :, i] = (img == i)
             img = np.array(o)
             return img
@@ -139,9 +141,18 @@ class FHCDataGenerator(Sequence):
             
 
             X[indx] = x
-            y.append(_y)
 
-        return X, np.array(y)
+            if self.n_classes == 1:
+                y.append(_y)
+            else:
+                y.append(_y)
+        
+        y = np.array(y)
+
+        if self.n_classes == 1:
+            y = to_categorical(y)
+        
+        return X, y
 
 
         

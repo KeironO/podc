@@ -12,11 +12,12 @@ from keras.applications import *
 from keras.utils import plot_model
 
 class BaseModel:
-    def __init__(self, max_frames, height, width, output_dir, n_channels=3, output_type="categorical"):
+    def __init__(self, max_frames, height, width, output_dir, n_classes, n_channels=3, output_type="categorical"):
         self.max_frames = int(max_frames)
         self.height = int(height)
         self.width = int(width)
         self.output_dir = output_dir
+        self.n_classes = n_classes
         self.model_fp = os.path.join(output_dir, "base_model.h5")
         if os.path.isfile(self.model_fp):
             self.model = self.generate_model()
@@ -116,16 +117,19 @@ class VGG19FHC(BaseModel):
         '''
         img_input = Input(shape=(self.height,self.width, 3))
 
-        cnn = VGG16(include_top=False, weights="imagenet", input_tensor=img_input)
+        cnn = VGG16(include_top=False, input_tensor=img_input)
 
         x = Conv2D(filters=2, kernel_size=(1,1))(cnn.output)
-        x = Conv2DTranspose(filters=2, kernel_size=(64, 64), strides=(32, 32), padding="same", activation="sigmoid")(x)
+        if self.n_classes == 1:
+            out_filters = 2
+        else:
+            out_filters = self.n_classes
 
-        model = Model(inputs=img_input, outputs = x )
+        x = Conv2DTranspose(filters=out_filters, kernel_size=(64, 64), strides=(32, 32), padding="same", activation="sigmoid")(x)
+        model = Model(inputs=img_input, outputs=x )
 
-       
         for layer in model.layers[:15]:
-            layer.trainable = False
+            layer.trainable = True
         
 
         model.compile(loss="categorical_crossentropy", optimizer="sgd")
