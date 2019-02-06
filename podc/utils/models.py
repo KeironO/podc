@@ -1,3 +1,22 @@
+'''
+Copyright (c) 2019 Keiron O'Shea
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either
+version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the
+Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301 USA
+'''
+
 import os
 
 from keras.models import Sequential
@@ -12,12 +31,12 @@ from keras.applications import *
 from keras.utils import plot_model
 
 class BaseModel:
-    def __init__(self, max_frames, height, width, output_dir, n_classes, n_channels=3, output_type="categorical"):
-        self.max_frames = int(max_frames)
+    def __init__(self, height: int, width: int, output_dir: str, n_classes: int, max_frames: int = 1 ,  n_channels: int = 3, output_type: str ="categorical") -> None:
         self.height = int(height)
         self.width = int(width)
         self.output_dir = output_dir
         self.n_classes = n_classes
+        self.max_frames = max_frames
         self.model_fp = os.path.join(output_dir, "base_model.h5")
         if os.path.isfile(self.model_fp):
             self.model = self.generate_model()
@@ -29,15 +48,12 @@ class BaseModel:
     def save_model(self):
         self.model.save(self.model_fp)
 
-    def load_model(self):
+    def load_model(self) -> Model:
         return k_load_model(self.model_fp)
-
-    def generate_model(self):
-        raise Exception("This isn't to be called!")
 
 
 class VGG19Image(BaseModel):
-    def generate_model(self):
+    def generate_model(self) -> None:
         cnn = VGG19(include_top=False, weights="imagenet", input_shape=(self.height, self.width, 3))
 
         x = Sequential()
@@ -56,7 +72,7 @@ class VGG19Image(BaseModel):
         
 
 class VGG19v1(BaseModel):
-    def generate_model(self):
+    def generate_model(self) -> None:
         inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
         cnn = VGG19(include_top=False)
 
@@ -89,7 +105,7 @@ class VGG19v1(BaseModel):
 
 class SmolNet(BaseModel):
 
-    def generate_model(self):
+    def generate_model(self) -> None:
 
         base_model  = MobileNet(input_shape=(self.height,self.width,3), include_top=False)
         x = base_model.output
@@ -108,7 +124,7 @@ class SmolNet(BaseModel):
 
 
 class VGG16FHC(BaseModel):
-    def generate_model(self):    
+    def generate_model(self) -> None:    
         #This is a bastardised version of VGG16, VGG19 is probably a bit too big to run on our hardware, which is likely to limit our experiment going forward.
     
         img_input = Input(shape=(self.height,self.width, 3))
@@ -137,9 +153,8 @@ class VGG16FHC(BaseModel):
         return model
 
 
-
 class VGG16v1(BaseModel):
-    def generate_model(self):
+    def generate_model(self) -> None:
         inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
 
         cnn = VGG16(weights="imagenet", include_top=False)
@@ -168,7 +183,7 @@ class VGG16v1(BaseModel):
         
 
 class ResNet50v1(BaseModel):
-    def generate_model(self):
+    def generate_model(self) -> None:
         inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
         
         cnn = InceptionV3(weights="imagenet", include_top=False, pooling="avg", input_shape=(self.height, self.width, 3))
@@ -186,11 +201,3 @@ class ResNet50v1(BaseModel):
         opt = Adam(lr = 1e-4, beta_1=0.9)
         model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
-
-
-
-if __name__ == "__main__":
-    #model = ResNet50v1(100, 75, 75, output_dir="/tmp/", output_type="")
-    #model = VGG19v1(100, 64, 64, output_dir="/tmp/")
-    #print(model.model)
-    pass

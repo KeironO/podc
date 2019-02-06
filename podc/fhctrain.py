@@ -25,7 +25,7 @@ train, test = train_test_split(ids, train_size=0.8)
 
 val, test = train_test_split(test, train_size=0.5)
 
-clf = VGG16FHC(0, _HEIGHT, _WIDTH, "/tmp/", n_classes).model
+clf = VGG16FHC(_HEIGHT, _WIDTH, "/tmp/", n_classes).model
 
 # Data Generators
 fhc_train = FHCDataGenerator(data_dir, train, _HEIGHT, _WIDTH, n_classes, zoom_range=.8, horizontal_flip=True, vertical_flip=True, shear_range=0.8, rotation_range=0.8)
