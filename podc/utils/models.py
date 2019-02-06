@@ -215,7 +215,7 @@ class VGG16FHC(BaseModel):
         img_input = Input(shape=(self.height, self.width, 3))
 
         cnn = VGG19(include_top=False, input_tensor=img_input)
-        
+
         for layer in cnn.layers:
             # HACK: Ensuring that the top of the model (VGG16 classifier)
             # is set to train.
@@ -230,7 +230,7 @@ class VGG16FHC(BaseModel):
             padding="same",
             activation="sigmoid"
             )(x)
-        
+
         model = Model(inputs=img_input, outputs=x)
 
         if self.n_classes == 1:
