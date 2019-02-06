@@ -34,7 +34,6 @@ class FHCDataGenerator(Sequence):
         self.batch_size = batch_size
         self.shuffle = shuffle
 
-        # Transformation stuff
         self.rotation_range = rotation_range
         self.shear_range = shear_range
         self.zoom_range = zoom_range

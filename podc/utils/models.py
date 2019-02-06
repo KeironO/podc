@@ -21,14 +21,31 @@ import os
 from keras.models import Sequential
 from keras.models import load_model as k_load_model
 from keras.engine import Model
-from keras.optimizers import *
-from keras import backend as K
-from keras.layers import *
-from keras.applications import * 
-from keras.utils import plot_model
+from keras.optimizers import SGD
+from keras.layers import (
+    GlobalAveragePooling2D,
+    Dense, 
+    Dropout,
+    GlobalMaxPool2D,
+    Input,
+    TimeDistributed,
+    Activation,
+    Conv2D,
+    Conv2DTranspose,
+    ConvLSTM2D)
+
+from keras.applications import VGG16, VGG19, MobileNet, InceptionV3, 
 
 class BaseModel:
-    def __init__(self, height: int, width: int, output_dir: str, n_classes: int, max_frames: int = 1 ,  n_channels: int = 3, output_type: str ="categorical") -> None:
+    def __init__(
+        self, height: int,
+        width: int,
+        output_dir: str,
+        n_classes: int,
+        max_frames: int = 1,
+        n_channels: int = 3,
+        output_type: str ="categorical") -> None:
+
         self.height = int(height)
         self.width = int(width)
         self.output_dir = output_dir
@@ -48,6 +65,8 @@ class BaseModel:
     def load_model(self) -> Model:
         return k_load_model(self.model_fp)
 
+    def generate_model(self):
+        raise RuntimeError("You only call this on a subclass of Model")
 
 class VGG19Image(BaseModel):
     def generate_model(self) -> None:
@@ -59,11 +78,9 @@ class VGG19Image(BaseModel):
         x.add(Dropout(0.5))
         x.add(Dense(1, activation='sigmoid'))
 
-
-
         model = Model(inputs=cnn.input, outputs=x(cnn.output))
-
         opt = Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=1e-08,decay=0.0)
+        
         model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
         
@@ -130,7 +147,6 @@ class VGG16FHC(BaseModel):
 
         x = Conv2D(filters=2, kernel_size=(1,1))(cnn.output)
 
-
         x = Conv2DTranspose(filters=self.n_classes, kernel_size=(64, 64), strides=(32, 32), padding="same", activation="sigmoid")(x)
         model = Model(inputs=img_input, outputs=x )
 
@@ -172,12 +188,13 @@ class VGG16v1(BaseModel):
         tdcnn = Dense(1, activation="softmax")(tdcnn)
 
         model = Model(inputs=inp, outputs=tdcnn)
-        opt = Adam(lr = 1e-4, beta_1=0.9)
-        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
-        return model
-
-
-        
+        opt = Adam(lr=1e-4, beta_1=0.9)
+        model.compile(
+            loss="binary_crossentropy",
+            optimizer=opt,
+            metrics=["accuracy"]
+            )
+        return model     
 
 class ResNet50v1(BaseModel):
     def generate_model(self) -> None:
