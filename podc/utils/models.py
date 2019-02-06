@@ -107,32 +107,32 @@ class SmolNet(BaseModel):
         return model
 
 
-class VGG19FHC(BaseModel):
-    def generate_model(self):
-        '''
-            This is a bastardised version of VGG16, VGG19 is probably a bit too big to run on our hardware.
-
-            You can find U-net details online.
-            
-        '''
+class VGG16FHC(BaseModel):
+    def generate_model(self):    
+        #This is a bastardised version of VGG16, VGG19 is probably a bit too big to run on our hardware, which is likely to limit our experiment going forward.
+    
         img_input = Input(shape=(self.height,self.width, 3))
 
-        cnn = VGG16(include_top=False, input_tensor=img_input)
+        cnn = VGG19(include_top=False, input_tensor=img_input)
 
         x = Conv2D(filters=2, kernel_size=(1,1))(cnn.output)
-        if self.n_classes == 1:
-            out_filters = 2
-        else:
-            out_filters = self.n_classes
 
-        x = Conv2DTranspose(filters=out_filters, kernel_size=(64, 64), strides=(32, 32), padding="same", activation="sigmoid")(x)
+
+        x = Conv2DTranspose(filters=self.n_classes, kernel_size=(64, 64), strides=(32, 32), padding="same", activation="sigmoid")(x)
         model = Model(inputs=img_input, outputs=x )
 
         for layer in model.layers[:15]:
+            # Ensuring that the top of the model (VGG16 classifier) is set to train.
             layer.trainable = True
         
+        if self.n_classes == 1:
+            l = "binary_crossentropy"
+        elif self.n_classes > 1:
+            l = "categorical_crossentropy"
+        
+        sgd = SGD()
 
-        model.compile(loss="categorical_crossentropy", optimizer="sgd")
+        model.compile(loss=l, optimizer=sgd)
 
         return model
 

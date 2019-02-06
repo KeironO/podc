@@ -148,9 +148,6 @@ class FHCDataGenerator(Sequence):
                 y.append(_y)
         
         y = np.array(y)
-
-        if self.n_classes == 1:
-            y = to_categorical(y)
         
         return X, y
 

@@ -3,16 +3,14 @@ import pandas as pd
 import json
 import os
 import numpy as np
-from utils import VGG19FHC
+from utils import VGG16FHC
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from keras.callbacks import *
 from keras.models import load_model
 
 home_dir = os.path.expanduser("~")
-
 data_dir = os.path.join(home_dir, "Data/FHC/training_set")
-
 results_dir = os.path.join(home_dir, "Data/FHC/results")
 
 _WIDTH = 128
@@ -21,14 +19,13 @@ _HEIGHT = 128
 n_classes = 1
 
 ids = pd.read_csv(os.path.join(data_dir, "training.csv"), index_col=0).index.values
-
 ids = np.array([x.split(".")[0] for x in ids])
 
 train, test = train_test_split(ids, train_size=0.8)
 
 val, test = train_test_split(test, train_size=0.5)
 
-clf = VGG19FHC(0, _HEIGHT, _WIDTH, "/tmp/", n_classes).model
+clf = VGG16FHC(0, _HEIGHT, _WIDTH, "/tmp/", n_classes).model
 
 # Data Generators
 fhc_train = FHCDataGenerator(data_dir, train, _HEIGHT, _WIDTH, n_classes, zoom_range=.8, horizontal_flip=True, vertical_flip=True, shear_range=0.8, rotation_range=0.8)
@@ -73,39 +70,23 @@ count = 0
 for X, y_true in fhc_test:
     y_pred = clf.predict(X)
     for indx, y_p in enumerate(y_pred):
-        '''
-        fig, axs = plt.subplots(figsize=[10, 5], ncols=2)
-
-        axs[0].imshow(y_pred[indx][:, :, 0])
-
-        axs[1].imshow(y_pred[indx][:, :, 1])
-
-        x, y = center_of_mass(y_pred[indx][:, :, 1])
-
-        circle = plt.Circle((x,y), 2)
-        axs[0].add_artist(circle)
-        plt.show()
-        
-        exit(0)
-        '''
 
         fig, axs = plt.subplots(figsize=[20,5], ncols=4)
 
-        axs[0].imshow(X[indx][:, :, 1])
+        axs[0].imshow(X[indx][:, :, 0])
         axs[0].axis("off")
         axs[0].set_title("Input Data")
 
-        axs[1].imshow(y_true[indx][:, :, 1])
+        axs[1].imshow(y_true[indx][:, :, 0])
         axs[1].axis("off")
         axs[1].set_title("Segmentation Ground Truth")
 
-        
 
-        axs[2].imshow(y_p[:, :, 1])
+        axs[2].imshow(y_p[:, :, 0])
         axs[2].axis("off")
         axs[2].set_title("Segmentation Prediction")
 
-        axs[3].imshow(y_p[:, :, 1] >= np.percentile(y_p[:, :, 1], 80))
+        axs[3].imshow(y_p[:, :, 0] >= np.percentile(y_p[:, :, 0], 80))
         axs[3].axis("off")
         axs[3].set_title("Segmentation Prediction (80%)")
 
