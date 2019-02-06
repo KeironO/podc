@@ -17,7 +17,6 @@ Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301 USA
 '''
 
-
 from keras.callbacks import (
     EarlyStopping,
     History,
@@ -33,15 +32,13 @@ class Classifier(object):
         self.trained = False
         self.clf = clf
 
-    def train(
-            self,
-            generator,
-            validation_data,
-            model_fp: str,
-            class_weights=False,
-            epochs: int = 10,
-            patience: int = 5
-            ) -> None:
+    def train(self,
+              generator,
+              validation_data,
+              model_fp: str,
+              class_weights=False,
+              epochs: int = 10,
+              patience: int = 5) -> None:
 
         if self.trained:
             raise RuntimeError("The model has already been trained")
@@ -49,11 +46,7 @@ class Classifier(object):
         hi = History()
 
         mc = ModelCheckpoint(
-            model_fp,
-            monitor="val_loss",
-            verbose=1,
-            save_best_only=True
-            )
+            model_fp, monitor="val_loss", verbose=1, save_best_only=True)
 
         es = EarlyStopping(monitor="val_loss", verbose=1, patience=patience)
 
@@ -61,21 +54,19 @@ class Classifier(object):
 
         if class_weights:
             history = clf.fit_generator(
-                            generator,
-                            epochs=epochs,
-                            callbacks=[hi, mc, es],
-                            validation_data=validation_data,
-                            verbose=1,
-                            class_weight=class_weights
-                    )
+                generator,
+                epochs=epochs,
+                callbacks=[hi, mc, es],
+                validation_data=validation_data,
+                verbose=1,
+                class_weight=class_weights)
         else:
             history = clf.fit_generator(
-                    generator,
-                    epochs=epochs,
-                    callbacks=[hi, mc, es],
-                    validation_data=validation_data,
-                    verbose=1
-                    )
+                generator,
+                epochs=epochs,
+                callbacks=[hi, mc, es],
+                validation_data=validation_data,
+                verbose=1)
         self.clf.load_weights(model_fp)
         self.history = history
         self.trained = True
@@ -89,4 +80,3 @@ class Classifier(object):
             else:
                 y_pred[index] = 0
         return y_true, y_pred
-

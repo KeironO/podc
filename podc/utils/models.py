@@ -23,36 +23,21 @@ from keras.models import load_model as k_load_model
 from keras.engine import Model
 from keras.optimizers import SGD, Adam
 from keras.applications import VGG16, VGG19, MobileNet, InceptionV3
-from keras.layers import (
-    Add,
-    GlobalAveragePooling2D,
-    Dense,
-    Lambda,
-    Multiply,
-    Dropout,
-    GlobalMaxPool2D,
-    MaxPooling1D,
-    Flatten,
-    Input,
-    LSTM,
-    TimeDistributed,
-    Activation,
-    Conv2D,
-    Conv2DTranspose,
-    ConvLSTM2D
-    )
+from keras.layers import (Add, GlobalAveragePooling2D, Dense, Lambda, Multiply,
+                          Dropout, GlobalMaxPool2D, MaxPooling1D, Flatten,
+                          Input, LSTM, TimeDistributed, Activation, Conv2D,
+                          Conv2DTranspose, ConvLSTM2D)
 
 
 class BaseModel:
-    def __init__(
-        self, height: int,
-        width: int,
-        output_dir: str,
-        n_classes: int,
-        max_frames: int = 1,
-        n_channels: int = 3,
-        output_type: str = "categorical"
-        ) -> None:
+    def __init__(self,
+                 height: int,
+                 width: int,
+                 output_dir: str,
+                 n_classes: int,
+                 max_frames: int = 1,
+                 n_channels: int = 3,
+                 output_type: str = "categorical") -> None:
 
         self.height = int(height)
         self.width = int(width)
@@ -84,33 +69,23 @@ class VGG19Image(BaseModel):
         cnn = VGG19(
             include_top=False,
             weights="imagenet",
-            input_shape=(self.height, self.width, 3)
-            )
+            input_shape=(self.height, self.width, 3))
 
         x = Sequential()
-        x.add(GlobalAveragePooling2D(
-            input_shape=cnn.output_shape[1:],
-            data_format=None)
-            )
+        x.add(
+            GlobalAveragePooling2D(
+                input_shape=cnn.output_shape[1:], data_format=None))
         x.add(Dense(512, activation="relu"))
         x.add(Dropout(0.5))
         x.add(Dense(1, activation="sigmoid"))
 
         opt = Adam(
-            lr=0.0001,
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-08,
-            decay=0.0
-            )
+            lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 
         model = Model(inputs=cnn.input, outputs=x(cnn.output))
 
         model.compile(
-            loss="binary_crossentropy",
-            optimizer=opt,
-            metrics=["accuracy"]
-            )
+            loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
 
         return model
 
@@ -118,9 +93,7 @@ class VGG19Image(BaseModel):
 class VGG19v1(BaseModel):
     def generate_model(self) -> Model:
         inp = Input(
-            shape=(self.max_frames, self.height, self.width, 3),
-            name="input"
-            )
+            shape=(self.max_frames, self.height, self.width, 3), name="input")
         cnn = VGG19(include_top=False)
 
         for layer in cnn.layers:
@@ -129,37 +102,31 @@ class VGG19v1(BaseModel):
         frame_acts = TimeDistributed(cnn)(inp)
 
         hid_states = ConvLSTM2D(
-            512,
-            (3, 3),
+            512, (3, 3),
             padding="same",
             return_sequences=True,
             recurrent_dropout=0.2,
-            dropout=0.2
-            )(frame_acts)
+            dropout=0.2)(frame_acts)
 
         conv_hid_states = TimeDistributed(
-            Conv2D(512, (1, 1), activation="relu", padding="same")
-            )(hid_states)
+            Conv2D(512, (1, 1), activation="relu", padding="same"))(hid_states)
 
         conv_acts = TimeDistributed(
-            Conv2D(512, (1, 1), activation="relu", padding="same")
-            )(frame_acts)
+            Conv2D(512, (1, 1), activation="relu", padding="same"))(frame_acts)
 
         acct = Activation(activation="tanh")(
-            Add()([conv_acts, conv_hid_states])
-            )
+            Add()([conv_acts, conv_hid_states]))
 
         eunice = TimeDistributed(
-            Conv2D(1, (1, 1), activation="relu", padding="same")
-            )(acct)
+            Conv2D(1, (1, 1), activation="relu", padding="same"))(acct)
 
         att = Activation(activation="softmax")(eunice)
 
         nn = Multiply()([frame_acts, att])
 
         nn = ConvLSTM2D(
-            512, (3, 3), padding="same", recurrent_dropout=0.2, dropout=0.2
-            )(nn)
+            512, (3, 3), padding="same", recurrent_dropout=0.2,
+            dropout=0.2)(nn)
 
         nn = GlobalMaxPool2D()(nn)
 
@@ -169,19 +136,14 @@ class VGG19v1(BaseModel):
 
         model = Model(inputs=inp, outputs=outputs)
         model.compile(
-            loss="binary_crossentropy",
-            optimizer=opt,
-            metrics=["accuracy"]
-            )
+            loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
 
 
 class SmolNet(BaseModel):
     def generate_model(self) -> Model:
         base_model = MobileNet(
-            input_shape=(self.height, self.width, 3),
-            include_top=False
-            )
+            input_shape=(self.height, self.width, 3), include_top=False)
         x = base_model.output
         x = GlobalAveragePooling2D()(x)
         cnn_model = Model(inputs=base_model.input, outputs=x)
@@ -190,19 +152,14 @@ class SmolNet(BaseModel):
         model.add(
             TimeDistributed(
                 cnn_model,
-                input_shape=(self.max_frames, self.height, self.width, 3)
-                )
-            )
+                input_shape=(self.max_frames, self.height, self.width, 3)))
         model.add(TimeDistributed(Flatten()))
 
         model.add(LSTM(1, return_sequences=True))
 
         opt = Adam(lr=1e-4, beta_1=0.9)
         model.compile(
-            loss="binary_crossentropy",
-            optimizer=opt,
-            metrics=["accuracy"]
-            )
+            loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
 
 
@@ -228,8 +185,7 @@ class VGG16FHC(BaseModel):
             kernel_size=(64, 64),
             strides=(32, 32),
             padding="same",
-            activation="sigmoid"
-            )(x)
+            activation="sigmoid")(x)
 
         model = Model(inputs=img_input, outputs=x)
 
@@ -247,9 +203,7 @@ class VGG16FHC(BaseModel):
 class VGG16v1(BaseModel):
     def generate_model(self) -> Model:
         inp = Input(
-            shape=(self.max_frames, self.height, self.width, 3),
-            name="input"
-            )
+            shape=(self.max_frames, self.height, self.width, 3), name="input")
 
         cnn = VGG16(weights="imagenet", include_top=False)
 
@@ -271,25 +225,20 @@ class VGG16v1(BaseModel):
         model = Model(inputs=inp, outputs=tdcnn)
         opt = Adam(lr=1e-4, beta_1=0.9)
         model.compile(
-            loss="binary_crossentropy",
-            optimizer=opt,
-            metrics=["accuracy"]
-            )
+            loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
         return model
 
 
 class ResNet50v1(BaseModel):
     def generate_model(self) -> Model:
         inp = Input(
-            shape=(self.max_frames, self.height, self.width, 3), name="input"
-            )
+            shape=(self.max_frames, self.height, self.width, 3), name="input")
 
         cnn = InceptionV3(
             weights="imagenet",
             include_top=False,
             pooling="avg",
-            input_shape=(self.height, self.width, 3)
-            )
+            input_shape=(self.height, self.width, 3))
 
         for layer in cnn.layers:
             layer.trainable = False
@@ -305,9 +254,6 @@ class ResNet50v1(BaseModel):
         model = Model(inputs=[inp], outputs=output)
 
         model.compile(
-            loss="binary_crossentropy",
-            optimizer=opt,
-            metrics=["accuracy"]
-            )
+            loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
 
         return model

@@ -34,29 +34,28 @@ ROW_AXIS = 0
 COL_AXIS = 1
 CHANNEL_AXIS = 2
 
+
 class VideoDataGenerator(Sequence):
-    def __init__(
-        self,
-        directory,
-        filenames,
-        labels,
-        batch_size,
-        shuffle=False,
-        height=224,
-        width=224,
-        max_frames=50,
-        optical_flow=False,
-        upsample=False,
-        featurewise_center=False,
-        gaussian_blur=False,
-        rotation_range=False,
-        brightness_range=False,
-        shear_range=False,
-        zoom_range=False,
-        horizontal_flip=False,
-        vertical_flip=False,
-        n_jobs=1
-    ):
+    def __init__(self,
+                 directory,
+                 filenames,
+                 labels,
+                 batch_size,
+                 shuffle=False,
+                 height=224,
+                 width=224,
+                 max_frames=50,
+                 optical_flow=False,
+                 upsample=False,
+                 featurewise_center=False,
+                 gaussian_blur=False,
+                 rotation_range=False,
+                 brightness_range=False,
+                 shear_range=False,
+                 zoom_range=False,
+                 horizontal_flip=False,
+                 vertical_flip=False,
+                 n_jobs=1):
         self.directory = directory
         self.filenames = filenames
         self.labels = labels
@@ -99,7 +98,7 @@ class VideoDataGenerator(Sequence):
 
         smol_boye = [
             x[0] for x in tmp_labels.items() if x[1] == smallest_class[0]
-            ]
+        ]
 
         dups = self.filenames.tolist()
 
@@ -109,7 +108,7 @@ class VideoDataGenerator(Sequence):
         self.filenames = np.array(dups)
 
     def __len__(self):
-        return int(np.floor(len(self.filepaths)/self.batch_size))
+        return int(np.floor(len(self.filepaths) / self.batch_size))
 
     def on_epoch_end(self):
         self.indexes = np.arange(len(self.filepaths))
@@ -117,7 +116,8 @@ class VideoDataGenerator(Sequence):
             np.random.shuffle(self.indexes)
 
     def __getitem__(self, index):
-        indxs = self.indexes[index*self.batch_size:self.batch_size*(index+1)]
+        indxs = self.indexes[index * self.batch_size:self.batch_size * (
+            index + 1)]
 
         filepaths = np.array([self.filepaths[k] for k in indxs])
         X, y = self.__data_generation(filepaths)
@@ -125,14 +125,11 @@ class VideoDataGenerator(Sequence):
         return X, y
 
     def __data_generation(self, filepaths):
-
-        def ___random_rotation(
-            x,
-            rg,
-            fill_mode="nearest",
-            cval=0.,
-            interpolation_order=1
-        ):
+        def ___random_rotation(x,
+                               rg,
+                               fill_mode="nearest",
+                               cval=0.,
+                               interpolation_order=1):
             theta = np.random.uniform(-rg, rg)
             for index in range(x.shape[0]):
                 x[index] = apply_affine_transform(
@@ -142,8 +139,7 @@ class VideoDataGenerator(Sequence):
                     col_axis=COL_AXIS,
                     channel_axis=CHANNEL_AXIS,
                     fill_mode=fill_mode,
-                    cval=cval
-                    )
+                    cval=cval)
             return x
 
         def __featurewise_centre(x):
@@ -171,8 +167,7 @@ class VideoDataGenerator(Sequence):
                     col_axis=COL_AXIS,
                     channel_axis=CHANNEL_AXIS,
                     fill_mode=fill_mode,
-                    cval=cval
-                    )
+                    cval=cval)
             return x
 
         def __optical_flow(x, window_size=4, tau=1e-5, mode="same"):
@@ -180,14 +175,14 @@ class VideoDataGenerator(Sequence):
             for frame_index in range(x.shape[0]):
                 frame0 = x[frame_index]
                 try:
-                    I2g = x[frame_index+1]
+                    I2g = x[frame_index + 1]
                 except IndexError:
                     break
                 kX = np.array([[-1., 1.], [-1., 1.]])
                 kY = np.array([[-1., -1.], [1., 1.]])
                 kT = np.array([[1., 1.], [1., 1.]])
 
-                w = int(np.floor(window_size/2))
+                w = int(np.floor(window_size / 2))
                 fxT = np.zeros((self.height, self.width, 3), dtype=float)
                 fyT = np.zeros((self.height, self.width, 3), dtype=float)
                 ftT = np.zeros((self.height, self.width, 3), dtype=float)
@@ -197,29 +192,22 @@ class VideoDataGenerator(Sequence):
                         frame0[:, :, channel_idx],
                         kX,
                         boundary="symm",
-                        mode=mode
-                        )
+                        mode=mode)
 
                     fy = convolve2d(
                         frame0[:, :, channel_idx],
                         kY,
                         boundary="symm",
-                        mode=mode
-                        )
+                        mode=mode)
 
                     ft = convolve2d(
-                        I2g[:, :, channel_idx],
-                        kT,
-                        boundary="symm",
-                        mode=mode
-                        )
+                        I2g[:, :, channel_idx], kT, boundary="symm", mode=mode)
 
                     ft += convolve2d(
                         frame0[:, :, channel_idx],
                         -kT,
                         boundary="symm",
-                        mode=mode
-                        )
+                        mode=mode)
 
                     fxT[:, :, channel_idx] = fx
                     fyT[:, :, channel_idx] = fy
@@ -228,35 +216,31 @@ class VideoDataGenerator(Sequence):
                 u = np.zeros((self.height, self.width))
                 v = np.zeros((self.height, self.width))
 
-                for i in range(w, frame0.shape[0]-w):
-                    for j in range(w, frame0.shape[1]-w):
-                        Ix = fxT[i-w:i+w+1, j-w:j+w+1, :].flatten()
-                        Iy = fyT[i-w:i+w+1, j-w:j+w+1, :].flatten()
-                        It = ftT[i-w:i+w+1, j-w:j+w+1, :].flatten()
+                for i in range(w, frame0.shape[0] - w):
+                    for j in range(w, frame0.shape[1] - w):
+                        Ix = fxT[i - w:i + w + 1, j - w:j + w + 1, :].flatten()
+                        Iy = fyT[i - w:i + w + 1, j - w:j + w + 1, :].flatten()
+                        It = ftT[i - w:i + w + 1, j - w:j + w + 1, :].flatten()
                         b = np.reshape(It, (It.shape[0], 1))
                         A = np.vstack((Ix, Iy)).T
 
                         nu = np.zeros((2, 1))
-                        if np.min(abs(
-                            np.linalg.eigvals(np.matmul(A.T, A))
-                            )) >= tau:
+                        if np.min(abs(np.linalg.eigvals(np.matmul(A.T,
+                                                                  A)))) >= tau:
 
                             nu = np.matmul(np.linalg.pinv(A), b)
 
                         u[i, j] = nu[0]
                         v[i, j] = nu[1]
 
-                mask = np.square(u)+np.square(v) == 0.0
+                mask = np.square(u) + np.square(v) == 0.0
                 rawX = x[frame_index]
 
                 for channel_idx in range(3):
                     channel_X = rawX[:, :, channel_idx]
                     m = np.ma.masked_array(
-                        data=channel_X,
-                        mask=mask,
-                        fill_value=0.0
-                        ).filled()
-                    rawX[:,:,channel_idx] = m
+                        data=channel_X, mask=mask, fill_value=0.0).filled()
+                    rawX[:, :, channel_idx] = m
 
                 x[frame_index] = rawX
 
@@ -271,15 +255,15 @@ class VideoDataGenerator(Sequence):
         def __random_zoom(x, zoom_range, fill_mode="nearest", cval=0.):
             zx, zy = np.random.uniform(zoom_range[0], zoom_range[1], 2)
             for index in range(x.shape[0]):
-                x[index] = apply_affine_transform(x[index],
-                                                    zx=zx,
-                                                    zy=zy,
-                                                    row_axis=ROW_AXIS,
-                                                    col_axis=COL_AXIS,
-                                                    channel_axis=CHANNEL_AXIS,
-                                                    fill_mode=fill_mode,
-                                                    cval=cval
-                                                    )
+                x[index] = apply_affine_transform(
+                    x[index],
+                    zx=zx,
+                    zy=zy,
+                    row_axis=ROW_AXIS,
+                    col_axis=COL_AXIS,
+                    channel_axis=CHANNEL_AXIS,
+                    fill_mode=fill_mode,
+                    cval=cval)
             return x
 
         def __random_shear(x, intensity, fill_mode="nearest", cval=0.):
@@ -292,17 +276,14 @@ class VideoDataGenerator(Sequence):
                     col_axis=COL_AXIS,
                     channel_axis=CHANNEL_AXIS,
                     fill_mode=fill_mode,
-                    cval=cval
-                    )
+                    cval=cval)
             return x
 
         def ___read(filepath):
             video = imageio.get_reader(filepath, "ffmpeg")
 
             frames = np.empty(
-                    (self.max_frames, self.width, self.height, 3),
-                    dtype="uint8"
-                )
+                (self.max_frames, self.width, self.height, 3), dtype="uint8")
 
             for index, frame in enumerate(video):
                 if index >= self.max_frames:
@@ -318,7 +299,9 @@ class VideoDataGenerator(Sequence):
 
             return frames
 
-        X = np.zeros((len(filepaths), self.max_frames, self.width, self.height, 3), dtype="uint8")
+        X = np.zeros(
+            (len(filepaths), self.max_frames, self.width, self.height, 3),
+            dtype="uint8")
         y = []
 
         def _do(filepath):
@@ -354,14 +337,15 @@ class VideoDataGenerator(Sequence):
             if self.optical_flow != False:
                 x = __optical_flow(x, window_size=self.optical_flow)
 
-            return x, self.labels["".join(os.path.splitext(os.path.basename(filepath)))]
-
-
+            return x, self.labels["".join(
+                os.path.splitext(os.path.basename(filepath)))]
 
         if self.n_jobs == -1:
             self.n_jobs = cpu_count()
         if self.n_jobs > 1:
-            data = Parallel(n_jobs=self.n_jobs, prefer="threads")(delayed(_do)(fp) for fp in filepaths)
+            data = Parallel(
+                n_jobs=self.n_jobs,
+                prefer="threads")(delayed(_do)(fp) for fp in filepaths)
         else:
             data = [_do(fp) for fp in filepaths]
 
@@ -370,5 +354,6 @@ class VideoDataGenerator(Sequence):
             X[indx] = x
             y.append(_y)
 
-        logging.info("RETURNING !! X RETURNED IN SIZE %s" % (size(sys.getsizeof(X))))
+        logging.info("RETURNING !! X RETURNED IN SIZE %s" %
+                     (size(sys.getsizeof(X))))
         return X, y
