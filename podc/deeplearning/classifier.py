@@ -18,41 +18,64 @@ Boston, MA 02110-1301 USA
 '''
 
 
-from keras.models import Sequential
-from keras.layers import TimeDistributed, Dense, Activation, Dropout, Conv2D, LSTM, MaxPooling2D, Flatten, Bidirectional, Input, Masking, multiply, Reshape, Lambda
-from keras.optimizers import Adam
-from keras.callbacks import EarlyStopping, History, ModelCheckpoint, LearningRateScheduler, ReduceLROnPlateau
-from keras.initializers import glorot_uniform
-from keras.applications import ResNet50, InceptionV3
-from keras.engine import Model
-from keras import backend as K
-import numpy as np
+from keras.callbacks import (
+    EarlyStopping,
+    History,
+    ModelCheckpoint,
+)
+
 
 class Classifier(object):
     def __init__(self, height, width, max_frames, clf):
-        self.max_frames = max_frames
         self.height = height
         self.width = width
+        self.max_frames = max_frames
         self.trained = False
         self.clf = clf
-        #self.clf = self.build_clf()
-    
-    def train(self, generator, validation_data, model_fp, class_weights=False, epochs=10, patience=5):
-        if self.trained != False:
-            raise Exception("!! ERROR !! THIS MODEL HAS ALREADY BEEN TRAINED!")
+
+    def train(
+            self,
+            generator,
+            validation_data,
+            model_fp: str,
+            class_weights=False,
+            epochs: int = 10,
+            patience: int = 5
+            ) -> None:
+
+        if self.trained:
+            raise RuntimeError("The model has already been trained")
 
         hi = History()
-        mc = ModelCheckpoint(model_fp, monitor="val_loss", verbose=1, save_best_only=True)
+
+        mc = ModelCheckpoint(
+            model_fp,
+            monitor="val_loss",
+            verbose=1,
+            save_best_only=True
+            )
 
         es = EarlyStopping(monitor="val_loss", verbose=1, patience=patience)
-        
-        if class_weights == False:
-            history = self.clf.fit_generator(generator, epochs=epochs, callbacks=[hi, mc, es],
-                                        validation_data=validation_data, verbose=1)
-        else:
-            history = self.clf.fit_generator(generator, epochs=epochs, callbacks=[hi, mc, es],
-                                        validation_data=validation_data, verbose=1, class_weight=class_weights)
 
+        clf = self.clf
+
+        if class_weights:
+            history = clf.fit_generator(
+                            generator,
+                            epochs=epochs,
+                            callbacks=[hi, mc, es],
+                            validation_data=validation_data,
+                            verbose=1,
+                            class_weight=class_weights
+                    )
+        else:
+            history = clf.fit_generator(
+                    generator,
+                    epochs=epochs,
+                    callbacks=[hi, mc, es],
+                    validation_data=validation_data,
+                    verbose=1
+                    )
         self.clf.load_weights(model_fp)
         self.history = history
         self.trained = True
@@ -67,5 +90,3 @@ class Classifier(object):
                 y_pred[index] = 0
         return y_true, y_pred
 
-
-        

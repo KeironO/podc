@@ -19,9 +19,7 @@ Boston, MA 02110-1301 USA
 
 import imageio
 from PIL import Image
-import pandas as pd
 import os
-from copy import deepcopy
 import random
 import sys
 from collections import Counter
@@ -34,10 +32,6 @@ from keras import backend as K
 from joblib import Parallel, delayed, cpu_count
 from hurry.filesize import size
 from scipy.signal import convolve2d
-
-# Logging details
-import logging
-#logging.basicConfig(format='%(asctime)s - %(message)s', stream=sys.stdout)
 
 import matplotlib.pyplot as plt
 from matplotlib.animation import ArtistAnimation
