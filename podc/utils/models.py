@@ -17,7 +17,7 @@ Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301 USA
 '''
 
-import os
+from os.path import isfile, join
 from keras.models import Sequential
 from keras.models import load_model as k_load_model
 from keras.engine import Model
@@ -28,13 +28,15 @@ from keras.layers import (
     Dropout,
     GlobalMaxPool2D,
     Input,
+    LSTM,
     TimeDistributed,
     Activation,
     Conv2D,
     Conv2DTranspose,
-    ConvLSTM2D)
+    ConvLSTM2D
+    )
+from keras.applications import VGG16, VGG19, MobileNet, InceptionV3
 
-from keras.applications import VGG16, VGG19, MobileNet, InceptionV3, 
 
 class BaseModel:
     def __init__(
@@ -44,15 +46,17 @@ class BaseModel:
         n_classes: int,
         max_frames: int = 1,
         n_channels: int = 3,
-        output_type: str ="categorical") -> None:
+        output_type: str = "categorical"
+        ) -> None:
 
         self.height = int(height)
         self.width = int(width)
         self.output_dir = output_dir
         self.n_classes = n_classes
         self.max_frames = max_frames
-        self.model_fp = os.path.join(output_dir, "base_model.h5")
-        if os.path.isfile(self.model_fp):
+        self.model_fp = join(output_dir, "base_model.h5")
+
+        if isfile(self.model_fp):
             self.model = self.generate_model()
         else:
             self.model = self.generate_model()
@@ -65,12 +69,17 @@ class BaseModel:
     def load_model(self) -> Model:
         return k_load_model(self.model_fp)
 
-    def generate_model(self):
+    def generate_model(self) -> RuntimeError:
         raise RuntimeError("You only call this on a subclass of Model")
+
 
 class VGG19Image(BaseModel):
     def generate_model(self) -> None:
-        cnn = VGG19(include_top=False, weights="imagenet", input_shape=(self.height, self.width, 3))
+        cnn = VGG19(
+            include_top=False,
+            weights="imagenet",
+            input_shape=(self.height, self.width, 3)
+            )
 
         x = Sequential()
         x.add(GlobalAveragePooling2D(input_shape=cnn.output_shape[1:], data_format=None))
@@ -87,7 +96,10 @@ class VGG19Image(BaseModel):
 
 class VGG19v1(BaseModel):
     def generate_model(self) -> None:
-        inp = Input(shape=(self.max_frames, self.height, self.width, 3), name="input")
+        inp = Input(
+            shape=(self.max_frames, self.height, self.width, 3),
+            name="input"
+            )
         cnn = VGG19(include_top=False)
 
         for layer in cnn.layers:
@@ -95,7 +107,14 @@ class VGG19v1(BaseModel):
         
         frame_acts = TimeDistributed(cnn)(inp)
 
-        hid_states = ConvLSTM2D(512, (3, 3), padding="same", return_sequences=True, recurrent_dropout=0.2, dropout=0.2)(frame_acts)
+        hid_states = ConvLSTM2D(
+            512,
+            (3, 3),
+            padding="same",
+            return_sequences=True,
+            recurrent_dropout=0.2,
+            dropout=0.2
+            )(frame_acts)
         
         conv_hid_states = TimeDistributed(Conv2D(512, (1,1), activation="relu", padding="same"))(hid_states)
 
