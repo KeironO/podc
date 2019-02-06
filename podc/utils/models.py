@@ -18,7 +18,6 @@ Boston, MA 02110-1301 USA
 '''
 
 import os
-
 from keras.models import Sequential
 from keras.models import load_model as k_load_model
 from keras.engine import Model
@@ -26,8 +25,6 @@ from keras.optimizers import *
 from keras import backend as K
 from keras.layers import *
 from keras.applications import * 
-
-
 from keras.utils import plot_model
 
 class BaseModel:

@@ -1,3 +1,22 @@
+'''
+Copyright (c) 2019 Keiron O'Shea
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either
+version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the
+Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301 USA
+'''
+
 from keras.utils import Sequence, to_categorical
 import os
 import numpy as np
@@ -5,7 +24,6 @@ from PIL import Image
 from keras_preprocessing.image import apply_affine_transform
 import random
          
-
 class FHCDataGenerator(Sequence):
     def __init__(self, data_dir, ids, height, width, n_classes, batch_size=32, shuffle=True, rotation_range=False, shear_range=False, zoom_range=False, horizontal_flip=False, vertical_flip=False):
         self.data_dir = data_dir
