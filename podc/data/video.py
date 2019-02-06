@@ -301,7 +301,8 @@ class VideoDataGenerator(Sequence):
 
         X = np.zeros(
             (len(filepaths), self.max_frames, self.width, self.height, 3),
-            dtype="uint8")
+            dtype="uint8"
+            )
         y = []
 
         def _do(filepath):
