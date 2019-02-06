@@ -18,15 +18,20 @@ Boston, MA 02110-1301 USA
 '''
 
 from os.path import isfile, join
-from keras.models import Sequential
+from keras.models import Sequential, Model
 from keras.models import load_model as k_load_model
 from keras.engine import Model
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adam
+from keras.applications import VGG16, VGG19, MobileNet, InceptionV3
 from keras.layers import (
+    Add,
     GlobalAveragePooling2D,
-    Dense, 
+    Dense,
+    Multiply,
     Dropout,
     GlobalMaxPool2D,
+    MaxPooling1D,
+    Flatten,
     Input,
     LSTM,
     TimeDistributed,
@@ -35,7 +40,6 @@ from keras.layers import (
     Conv2DTranspose,
     ConvLSTM2D
     )
-from keras.applications import VGG16, VGG19, MobileNet, InceptionV3
 
 
 class BaseModel:
@@ -95,7 +99,7 @@ class VGG19Image(BaseModel):
         
 
 class VGG19v1(BaseModel):
-    def generate_model(self) -> None:
+    def generate_model(self) -> Model:
         inp = Input(
             shape=(self.max_frames, self.height, self.width, 3),
             name="input"
@@ -116,31 +120,50 @@ class VGG19v1(BaseModel):
             dropout=0.2
             )(frame_acts)
         
-        conv_hid_states = TimeDistributed(Conv2D(512, (1,1), activation="relu", padding="same"))(hid_states)
+        conv_hid_states = TimeDistributed(
+            Conv2D(512, (1, 1), activation="relu", padding="same")
+            )(hid_states)
 
-        conv_acts = TimeDistributed(Conv2D(512, (1, 1), activation="relu", padding="same"))(frame_acts)
+        conv_acts = TimeDistributed(
+            Conv2D(512, (1, 1), activation="relu", padding="same")
+            )(frame_acts)
 
-        eunice = TimeDistributed(Conv2D(1, (1, 1), activation="relu", padding="same"))(Activation(activation="tanh")(Add()([conv_acts, conv_hid_states])))
+        acct = Activation(activation="tanh")(Add()([conv_acts, conv_hid_states]))
+
+        eunice = TimeDistributed(
+            Conv2D(1, (1, 1), activation="relu", padding="same")
+            )(acct)
 
         att = Activation(activation="softmax")(eunice)
 
         nn = Multiply()([frame_acts, att])
-        nn = ConvLSTM2D(512, (3, 3), padding="same", recurrent_dropout=0.2, dropout=0.2)(nn)
+
+        nn = ConvLSTM2D(
+            512, (3, 3), padding="same", recurrent_dropout=0.2, dropout=0.2
+            )(nn)
 
         nn = GlobalMaxPool2D()(nn)
 
         outputs = Dense(1, activation="sigmoid")(nn)
 
+        opt = Adam(lr=1e-4, beta_1=0.9)
+
         model = Model(inputs=inp, outputs=outputs)
-        opt = Adam(lr = 1e-4, beta_1=0.9)
-        model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        model.compile(
+            loss="binary_crossentropy",
+            optimizer=opt,
+            metrics=["accuracy"]
+            )
         return model
+
 
 class SmolNet(BaseModel):
 
-    def generate_model(self) -> None:
-
-        base_model  = MobileNet(input_shape=(self.height,self.width,3), include_top=False)
+    def generate_model(self) -> Model:
+        base_model  = MobileNet(
+            input_shape=(self.height,self.width,3), 
+            include_top=False
+            )
         x = base_model.output
         x = GlobalAveragePooling2D()(x)
         cnn_model = Model(inputs=base_model.input, outputs=x)
@@ -170,17 +193,17 @@ class VGG16FHC(BaseModel):
         model = Model(inputs=img_input, outputs=x )
 
         for layer in model.layers[:15]:
-            # Ensuring that the top of the model (VGG16 classifier) is set to train.
+            # HACK: Ensuring that the top of the model (VGG16 classifier) is set to train.
             layer.trainable = True
         
         if self.n_classes == 1:
-            l = "binary_crossentropy"
+            loss_func = "binary_crossentropy"
         elif self.n_classes > 1:
-            l = "categorical_crossentropy"
+            loss_func = "categorical_crossentropy"
         
         sgd = SGD()
 
-        model.compile(loss=l, optimizer=sgd)
+        model.compile(loss=loss_func, optimizer=sgd)
 
         return model
 
