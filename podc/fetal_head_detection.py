@@ -72,7 +72,9 @@ es = EarlyStopping(
     verbose=0,
     mode="auto",
     baseline=None,
-    restore_best_weights=False)
+    restore_best_weights=False
+    )
+
 mc = ModelCheckpoint(
     model_fp,
     monitor="val_loss",
@@ -80,11 +82,13 @@ mc = ModelCheckpoint(
     save_best_only=True,
     save_weights_only=False,
     mode='auto',
-    period=1)
+    period=1
+    )
 
 # Do the training
 history = clf.fit_generator(
-    fhc_train, epochs=10, validation_data=fhc_val, callbacks=[es, mc])
+    fhc_train, epochs=1000, validation_data=fhc_val, callbacks=[es, mc]
+    )
 
 history = history.history
 
