@@ -19,7 +19,7 @@ Boston, MA 02110-1301 USA
 
 import imageio
 from PIL import Image
-from os.path import join, basename
+from os.path import join, basename, splitext
 import random
 from collections import Counter
 from keras.utils import Sequence
