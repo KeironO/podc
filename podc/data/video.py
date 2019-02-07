@@ -27,7 +27,6 @@ from keras_preprocessing.image import apply_affine_transform
 from scipy.ndimage.filters import gaussian_filter
 import numpy as np
 from joblib import Parallel, delayed, cpu_count
-from hurry.filesize import size
 from scipy.signal import convolve2d
 
 ROW_AXIS = 0

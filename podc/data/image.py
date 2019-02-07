@@ -17,7 +17,8 @@ Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301 USA
 '''
 
-from keras.utils import Sequence, to_categorical
+from keras.utils import Sequence
+from joblib import Parallel, delayed, cpu_count
 import os
 import numpy as np
 from PIL import Image
@@ -27,7 +28,7 @@ import random
 
 class FHCDataGenerator(Sequence):
     def __init__(self,
-                 data_dir: string,
+                 data_dir: str,
                  ids: list,
                  height: int,
                  width: int,
@@ -39,7 +40,8 @@ class FHCDataGenerator(Sequence):
                  zoom_range: bool = False,
                  horizontal_flip: bool = False,
                  vertical_flip: bool = False,
-                 elipsoid_fill: bool = True):
+                 elipsoid_fill: bool = True,
+                 n_jobs: int = -1):
         self.data_dir = data_dir
         self.ids = ids
         self.height = int(height)
@@ -55,6 +57,7 @@ class FHCDataGenerator(Sequence):
         self.vertical_flip = vertical_flip
         self.elipsoid_fill = elipsoid_fill
 
+        self.n_jobs = n_jobs
         self.on_epoch_end()
 
     def _join_paths(self, fns):
@@ -204,12 +207,9 @@ class FHCDataGenerator(Sequence):
             img = np.array(o)
             return img
 
-        identifiers = self.ids[indexes]
+        ids = self.ids[indexes]
 
-        X = np.zeros((len(identifiers), self.height, self.width, 3))
-        y = []
-
-        for indx, identifier in enumerate(identifiers):
+        def _do(identifier):
             x = _load_image(identifier)
             _y = _load_annotations(identifier)
 
@@ -229,13 +229,24 @@ class FHCDataGenerator(Sequence):
             if self.vertical_flip:
                 if random.randint(0, 1) == 1:
                     x, _y = __flip_axis(x, _y, 0)
+            return x, _y
 
+        X = np.zeros((len(ids), self.height, self.width, 3))
+        y = []
+
+        if self.n_jobs == -1:
+            self.n_jobs = cpu_count()
+        if self.n_jobs > 1:
+            data = Parallel(
+                n_jobs=self.n_jobs,
+                prefer="threads")(delayed(_do)(id) for id in ids)
+        else:
+            data = [_do(fp) for fp in ids]
+
+        for indx in range(len(data)):
+            x, _y = data[indx]
             X[indx] = x
-
-            if self.n_classes == 1:
-                y.append(_y)
-            else:
-                y.append(_y)
+            y.append(_y)
 
         y = np.array(y)
 
