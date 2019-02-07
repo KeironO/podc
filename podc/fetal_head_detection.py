@@ -47,6 +47,8 @@ val, test = train_test_split(test, train_size=0.5)
 
 clf = VGG16FHC(_HEIGHT, _WIDTH, "/tmp/", n_classes).model
 
+fill_elipsoid = True
+
 # Data Generators
 fhc_train = FHCDataGenerator(
     data_dir,
@@ -120,7 +122,7 @@ for X, y_true in fhc_test:
     y_pred = clf.predict(X)
     for indx, y_p in enumerate(y_pred):
 
-        fig, axs = plt.subplots(figsize=[20, 5], ncols=4)
+        fig, axs = plt.subplots(figsize=[15, 5], ncols=3)
 
         axs[0].imshow(X[indx][:, :, 0])
         axs[0].axis("off")
@@ -133,10 +135,6 @@ for X, y_true in fhc_test:
         axs[2].imshow(y_p[:, :, 0])
         axs[2].axis("off")
         axs[2].set_title("Segmentation Prediction")
-
-        axs[3].imshow(y_p[:, :, 0] >= np.percentile(y_p[:, :, 0], 80))
-        axs[3].axis("off")
-        axs[3].set_title("Segmentation Prediction (80%)")
 
         plt.tight_layout()
         plt.savefig("%s/pred_%i.png" % (results_dir, count))

@@ -27,18 +27,19 @@ import random
 
 class FHCDataGenerator(Sequence):
     def __init__(self,
-                 data_dir,
-                 ids,
-                 height,
-                 width,
-                 n_classes,
-                 batch_size=32,
-                 shuffle=True,
-                 rotation_range=False,
-                 shear_range=False,
-                 zoom_range=False,
-                 horizontal_flip=False,
-                 vertical_flip=False):
+                 data_dir: string,
+                 ids: list,
+                 height: int,
+                 width: int,
+                 n_classes: int,
+                 batch_size: int = 32,
+                 shuffle: bool = True,
+                 rotation_range: bool = False,
+                 shear_range: bool = False,
+                 zoom_range: bool = False,
+                 horizontal_flip: bool = False,
+                 vertical_flip: bool = False,
+                 elipsoid_fill: bool = True):
         self.data_dir = data_dir
         self.ids = ids
         self.height = int(height)
@@ -52,6 +53,7 @@ class FHCDataGenerator(Sequence):
         self.zoom_range = zoom_range
         self.horizontal_flip = horizontal_flip
         self.vertical_flip = vertical_flip
+        self.elipsoid_fill = elipsoid_fill
 
         self.on_epoch_end()
 
@@ -178,7 +180,6 @@ class FHCDataGenerator(Sequence):
 
         def _load_annotations(identifier):
             def __colour_elipsoid(img):
-                img = np.array(img)
                 img = (img == 255).astype(int)
 
                 return np.array(
@@ -187,7 +188,10 @@ class FHCDataGenerator(Sequence):
 
             fp = os.path.join(self.data_dir, identifier + "_Annotation.png")
             img = Image.open(fp)
-            img = __colour_elipsoid(img)
+            img = np.array(img)
+
+            if self.elipsoid_fill:
+                img = __colour_elipsoid(img)
 
             img = Image.fromarray(img.astype("uint8"))
 
