@@ -21,12 +21,11 @@ from data import VideoDataGenerator
 from deeplearning import Classifier
 from sklearn.model_selection import LeaveOneOut, KFold, train_test_split
 import numpy as np
-from utils import get_labels, get_max_frames, VGG19v1, SmolNet, VGG16v1
+from utils import get_labels, get_max_frames, VGG16v1
 import os
 import json
 from collections import Counter
 from sklearn.utils import class_weight
-from keras.models import load_model
 from sklearn.metrics import confusion_matrix
 
 home_dir = os.path.expanduser("~")
@@ -72,6 +71,7 @@ tra_vdg = VideoDataGenerator(
     shear_range=1,
     n_jobs=-1,
     upsample=True)
+
 val_vdg = VideoDataGenerator(
     videos_dir,
     val,
@@ -81,6 +81,7 @@ val_vdg = VideoDataGenerator(
     height=height,
     width=width,
     n_jobs=-1)
+
 tes_vdg = VideoDataGenerator(
     videos_dir,
     test,
