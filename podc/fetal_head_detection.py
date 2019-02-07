@@ -66,10 +66,6 @@ fhc_val = FHCDataGenerator(data_dir, val, _HEIGHT, _WIDTH, n_classes)
 fhc_test = FHCDataGenerator(data_dir, test, _HEIGHT, _WIDTH, n_classes)
 
 
-for X, y in fhc_train:
-    print(X.shape)
-exit(0)
-
 model_fp = os.path.join(results_dir, "best_model.md5")
 
 # Callbacks
