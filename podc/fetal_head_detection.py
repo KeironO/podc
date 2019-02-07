@@ -18,6 +18,7 @@ Boston, MA 02110-1301 USA
 '''
 
 from data import FHCDataGenerator
+from scipy.ndimage.measurements import center_of_mass
 import pandas as pd
 import json
 import os
@@ -32,8 +33,8 @@ home_dir = os.path.expanduser("~")
 data_dir = os.path.join(home_dir, "Data/FHC/training_set")
 results_dir = os.path.join(home_dir, "Data/FHC/results")
 
-_WIDTH = 128
-_HEIGHT = 128
+_WIDTH = 224
+_HEIGHT = 224
 
 n_classes = 1
 
@@ -111,10 +112,8 @@ plt.tight_layout()
 plt.savefig(history_lossplot_fp)
 plt.clf()
 
-# Load best models
+# Load best model
 clf = load_model(model_fp)
-
-from scipy.ndimage.measurements import center_of_mass
 
 # Cheap Evaluator
 count = 0

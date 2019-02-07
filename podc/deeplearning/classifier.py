@@ -59,19 +59,22 @@ class Classifier(object):
                 callbacks=[hi, mc, es],
                 validation_data=validation_data,
                 verbose=1,
-                class_weight=class_weights)
+                class_weight=class_weights
+                )
         else:
             history = clf.fit_generator(
                 generator,
                 epochs=epochs,
                 callbacks=[hi, mc, es],
                 validation_data=validation_data,
-                verbose=1)
+                verbose=1
+                )
+        
         self.clf.load_weights(model_fp)
         self.history = history
         self.trained = True
 
-    def predict(self, generator):
+    def predict_pod(self, generator):
         y_true = [y for _, y in generator]
         y_pred = self.clf.predict_generator(generator)
         for index, pred in enumerate(y_pred):
@@ -80,3 +83,6 @@ class Classifier(object):
             else:
                 y_pred[index] = 0
         return y_true, y_pred
+
+    def predict_fetal_head_elipsoid(self):
+        pass
