@@ -54,7 +54,7 @@ class VideoDataGenerator(Sequence):
                  zoom_range=False,
                  horizontal_flip=False,
                  vertical_flip=False,
-                 n_jobs=1):
+                 n_jobs=-1):
         self.directory = directory
         self.filenames = filenames
         self.labels = labels
@@ -64,8 +64,7 @@ class VideoDataGenerator(Sequence):
         self.width = width
         self.optical_flow = optical_flow
         self.max_frames = max_frames
-        if upsample == True:
-            self.upsample = upsample
+        self.upsample = upsample
         self.featurewise_center = featurewise_center
         self.gaussian_blur = gaussian_blur
         self.rotation_range = rotation_range

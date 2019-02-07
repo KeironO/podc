@@ -26,7 +26,7 @@ import numpy as np
 from utils import VGG16FHC
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-from keras.callbacks import *
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.models import load_model
 
 home_dir = os.path.expanduser("~")
