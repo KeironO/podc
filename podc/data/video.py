@@ -19,7 +19,7 @@ Boston, MA 02110-1301 USA
 
 import imageio
 from PIL import Image
-from os.path import join
+from os.path import join, basename
 import random
 from collections import Counter
 from keras.utils import Sequence
@@ -308,38 +308,38 @@ class VideoDataGenerator(Sequence):
         def _do(filepath):
             x = ___read(filepath)
 
-            if self.featurewise_center != False:
+            if self.featurewise_center:
                 x = __featurewise_centre(x)
 
-            if self.gaussian_blur != False:
+            if self.gaussian_blur:
                 x = __gaussian_blur(x)
 
-            if self.rotation_range != False:
+            if self.rotation_range:
                 x = ___random_rotation(x, self.rotation_range)
 
-            if self.horizontal_flip != False:
+            if self.horizontal_flip:
                 # coinflip
                 if random.randint(0, 1) == 1:
                     x = __flip_axis(x, ROW_AXIS)
 
-            if self.vertical_flip != False:
+            if self.vertical_flip:
                 if random.randint(0, 1) == 1:
                     x = __flip_axis(x, COL_AXIS)
 
-            if self.shear_range != False:
+            if self.shear_range:
                 x = __random_shear(x, self.shear_range)
 
-            if self.brightness_range != False:
-                pass
+            if self.brightness_range:
+                raise NotImplementedError("Brightness yet to be implemented")
 
-            if self.zoom_range != False:
+            if self.zoom_range:
                 x = __random_zoom(x, self.zoom_range)
 
-            if self.optical_flow != False:
+            if self.optical_flow:
                 x = __optical_flow(x, window_size=self.optical_flow)
 
             return x, self.labels["".join(
-                os.path.splitext(os.path.basename(filepath)))]
+                splitext(basename(filepath)))]
 
         if self.n_jobs == -1:
             self.n_jobs = cpu_count()
@@ -355,6 +355,4 @@ class VideoDataGenerator(Sequence):
             X[indx] = x
             y.append(_y)
 
-        logging.info("RETURNING !! X RETURNED IN SIZE %s" %
-                     (size(sys.getsizeof(X))))
         return X, y
