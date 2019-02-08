@@ -32,13 +32,13 @@ class Classifier(object):
         self.trained = False
         self.clf = clf
 
-    def train(self,
-              generator,
-              validation_data,
-              model_fp: str,
-              class_weights=False,
-              epochs: int = 10,
-              patience: int = 5) -> None:
+    def fit(self,
+            generator,
+            validation_data,
+            model_fp: str,
+            class_weights=False,
+            epochs: int = 10,
+            patience: int = 5) -> None:
 
         if self.trained:
             raise RuntimeError("The model has already been trained")

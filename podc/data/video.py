@@ -58,6 +58,10 @@ class VideoDataGenerator(Sequence):
         self.directory = directory
         self.filenames = filenames
         self.labels = labels
+
+        if upsample:
+            self._upsample()
+
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.height = height
@@ -75,35 +79,29 @@ class VideoDataGenerator(Sequence):
         self.vertical_flip = vertical_flip
         self.n_jobs = n_jobs
 
-        if self.upsample:
-            self._upsample()
-
         self._generate_filepaths()
         self.on_epoch_end()
 
     def _generate_filepaths(self):
-        self.filepaths = [join(self.directory, x) for x in self.filenames]
+        self.filepaths = np.array(
+            [join(self.directory, x) for x in self.filenames]
+            )
 
     def _upsample(self):
-        # This was written in a fit of extreme tiredness.
-        tmp_labels = {}
-        for fn in self.filenames:
-            tmp_labels[fn] = self.labels[fn]
-        counts = Counter([x[1] for x in tmp_labels.items()])
-        smallest_class = min(counts.items(), key=lambda x: x[1])
-        largest_class = max(counts.items(), key=lambda x: x[1])
-        diff = largest_class[1] - smallest_class[1]
+        labels = {x: self.labels[x] for x in self.filenames}
 
-        smol_boye = [
-            x[0] for x in tmp_labels.items() if x[1] == smallest_class[0]
-        ]
+        counter = Counter(labels.values())
 
-        dups = self.filenames.tolist()
+        smallest = min(counter, key=counter.get)
+        largest = max(counter, key=counter.get)     
 
-        for _ in range(diff):
-            dups.append(random.choice(smol_boye))
+        smol = [x for x in labels if self.labels[x] == smallest]
+        tmp_filenames = self.filenames.tolist()
 
-        self.filenames = np.array(dups)
+        for i in range(counter[largest] - counter[smallest]):
+            random_filename = random.choice(smol)
+            tmp_filenames.append(random_filename)
+        self.filenames = np.array(tmp_filenames)
 
     def __len__(self):
         return int(np.floor(len(self.filepaths) / self.batch_size))
@@ -117,8 +115,7 @@ class VideoDataGenerator(Sequence):
         indxs = self.indexes[index * self.batch_size:self.batch_size * (
             index + 1)]
 
-        filepaths = np.array([self.filepaths[k] for k in indxs])
-        X, y = self.__data_generation(filepaths)
+        X, y = self.__data_generation(self.filepaths[indxs])
 
         return X, y
 
