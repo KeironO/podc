@@ -27,7 +27,11 @@ from keras.layers import (Add, GlobalAveragePooling2D, Dense, Lambda, Multiply,
                           Dropout, GlobalMaxPool2D, MaxPooling1D, Flatten,
                           Input, LSTM, TimeDistributed, Activation, Conv2D,
                           Conv2DTranspose, ConvLSTM2D)
-
+from keras.callbacks import (
+    EarlyStopping,
+    History,
+    ModelCheckpoint,
+)
 
 class BaseModel:
     def __init__(self,
@@ -44,7 +48,8 @@ class BaseModel:
         self.output_dir = output_dir
         self.n_classes = n_classes
         self.max_frames = max_frames
-        self.model_fp = join(output_dir, "base_model.h5")
+        self.trained = False
+        self.model_fp = join(output_dir, "model.h5")
 
         if isfile(self.model_fp):
             self.model = self.generate_model()
@@ -59,9 +64,62 @@ class BaseModel:
     def load_model(self) -> Model:
         return k_load_model(self.model_fp)
 
+    def fit(self,
+            generator,
+            val_generator,
+            epochs,
+            patience,
+            class_weights=False) -> dict:
+
+        hi = History()
+
+        mc = ModelCheckpoint(
+            self.model_fp, monitor="val_loss", verbose=1, save_best_only=True)
+
+        es = EarlyStopping(monitor="val_loss", verbose=1, patience=patience)
+
+        clf = self.model
+
+        if class_weights:
+            history = clf.fit_generator(
+                generator,
+                epochs=epochs,
+                callbacks=[hi, mc, es],
+                validation_data=val_generator,
+                verbose=1,
+                class_weight=class_weights)
+        else:
+            history = clf.fit_generator(
+                generator,
+                epochs=epochs,
+                callbacks=[hi, mc, es],
+                validation_data=val_generator,
+                verbose=1)
+
+        self.model.load_weights(self.model_fp)
+        self.history = history
+        self.trained = True
+
+
+    def predict_pod(self, generator):
+        y_true = [y for _, y in generator]
+
+        y_true = ["Yes" if (x == 1) else "No" for x in y_true]
+        y_pred = self.model.predict_generator(generator)
+        y_preds = []
+        for index, pred in enumerate(y_pred):
+            if float(pred) >= 0.75:
+                y_preds.append("Yes")
+            elif float(pred) <= 0.35:
+                y_preds.append("No")
+            else:
+                y_preds.append("Unsure")
+
+        return y_true, y_preds
+
     def generate_model(self) -> RuntimeError:
-        raise RuntimeError("You only call this on a subclass of Model")
-        return None
+        return RuntimeError("You only call this on a subclass of Model")
+
 
 
 class VGG19Image(BaseModel):

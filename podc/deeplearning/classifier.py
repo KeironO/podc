@@ -74,21 +74,6 @@ class Classifier(object):
         self.history = history
         self.trained = True
 
-    def predict_pod(self, generator):
-        y_true = [y for _, y in generator]
-        
-        y_true = ["Yes" if (x == 1) else "No" for x in y_true]
-        y_pred = self.clf.predict_generator(generator)
-
-        for index, pred in enumerate(y_pred):
-            if pred >= 0.75:
-                y_pred[index] = "Yes"
-            elif pred <= 0.35:
-                y_pred[index] = "No"
-            else:
-                y_pred[index] = "Unsure"
-
-        return y_true, y_pred
-
+    
     def predict_fetal_head_elipsoid(self):
         pass

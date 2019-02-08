@@ -22,17 +22,16 @@ import os
 import numpy as np
 import json
 from sklearn.model_selection import KFold, train_test_split
-from collections import Counter
 from utils import VGG16v1
-from deeplearning import Classifier
 
 home_dir = os.path.expanduser("~")
 slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
 data_dir = os.path.join(slidingsign_dir, "videos")
 results_dir = os.path.join(slidingsign_dir, "results")
 
-_WIDTH = 224
-_HEIGHT = 224
+_WIDTH = 122
+_HEIGHT = 122
+_MAX_FRAMES = 100
 
 with open(os.path.join(slidingsign_dir, "labels.json"), "r") as infile:
     labels = json.load(infile)
@@ -53,11 +52,11 @@ for train_index, test_index in kf.split(video_ids):
         labels,
         height=_HEIGHT,
         width=_WIDTH,
-        batch_size=32,
+        max_frames=_MAX_FRAMES,
+        batch_size=int(len(train_index) / 8),
         upsample=True,
         shuffle=True,
-        n_jobs=-1
-        )
+        n_jobs=-1)
 
     val_vg = VideoDataGenerator(
         data_dir,
@@ -65,9 +64,9 @@ for train_index, test_index in kf.split(video_ids):
         labels,
         height=_HEIGHT,
         width=_WIDTH,
-        batch_size=int(len(val_index)/4),
-        n_jobs=-1
-    )
+        max_frames=_MAX_FRAMES,
+        batch_size=int(len(val_index) / 8),
+        n_jobs=-1)
 
     test_vg = VideoDataGenerator(
         data_dir,
@@ -75,12 +74,15 @@ for train_index, test_index in kf.split(video_ids):
         labels,
         height=_HEIGHT,
         width=_WIDTH,
-        batch_size=int(len(test_index)/4),
-        n_jobs=-1
-    )
+        max_frames=_MAX_FRAMES,
+        batch_size=int(len(test_index) / 8),
+        n_jobs=-1)
 
-    model = VGG16v1(_HEIGHT, _WIDTH, results_dir, max_frames=100)
+    clf = VGG16v1(
+        _HEIGHT, _WIDTH, results_dir, n_classes=1, max_frames=_MAX_FRAMES)
 
-    clf = Classifier(_HEIGHT, _WIDTH, 100, model)
-
-    clf.fit(train_vg, val_vg, )
+    clf.fit(train_vg, val_vg, epochs=1000, patience=50)
+    pred = clf.predict_pod(test_vg)
+    print(pred)
+    exit(0)
+    break
