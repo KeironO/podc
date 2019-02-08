@@ -18,4 +18,4 @@ Boston, MA 02110-1301 USA
 '''
 
 from __future__ import absolute_import
-from .classifier import Classifier
+from .models import *

@@ -23,7 +23,7 @@ import pandas as pd
 import json
 import os
 import numpy as np
-from utils import VGG16FHC
+from deeplearning import VGG16FHC
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from keras.callbacks import ModelCheckpoint, EarlyStopping

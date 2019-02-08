@@ -22,7 +22,7 @@ import os
 import numpy as np
 import json
 from sklearn.model_selection import KFold, train_test_split
-from utils import VGG16v1
+from deeplearning import VGG16v1
 
 home_dir = os.path.expanduser("~")
 slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
