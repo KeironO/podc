@@ -31,7 +31,7 @@ results_dir = os.path.join(slidingsign_dir, "results")
 
 _WIDTH = 122
 _HEIGHT = 122
-_MAX_FRAMES = 100
+_MAX_FRAMES = 150
 
 with open(os.path.join(slidingsign_dir, "labels.json"), "r") as infile:
     labels = json.load(infile)
@@ -57,6 +57,21 @@ for train_index, test_index in kf.split(video_ids):
         upsample=True,
         shuffle=True,
         n_jobs=-1)
+
+    import matplotlib.pyplot as plt
+    import matplotlib.animation as animation
+
+    for X, y in train_vg:
+        for indx in range(X.shape[0]):
+            fig = plt.figure()
+            ims = []
+            for frame in X[indx]:
+                ims.append([plt.imshow(frame)])
+            ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True)
+            plt.show()
+            break
+
+        exit(0)
 
     val_vg = VideoDataGenerator(
         data_dir,

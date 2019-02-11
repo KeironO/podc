@@ -93,7 +93,7 @@ class VideoDataGenerator(Sequence):
         counter = Counter(labels.values())
 
         smallest = min(counter, key=counter.get)
-        largest = max(counter, key=counter.get)     
+        largest = max(counter, key=counter.get)
 
         smol = [x for x in labels if self.labels[x] == smallest]
         tmp_filenames = self.filenames.tolist()
@@ -277,22 +277,27 @@ class VideoDataGenerator(Sequence):
         def ___read(filepath):
             video = imageio.get_reader(filepath, "ffmpeg")
 
-            frames = np.empty(
-                (self.max_frames, self.width, self.height, 3), dtype="uint8")
-
-            for index, frame in enumerate(video):
-                if index >= self.max_frames:
-                    break
+            frames = []
+            # Need to extrapolate.
+            for frame in video:
                 frame = frame.view(type=np.ndarray)
                 frame = Image.fromarray(frame)
-                if None not in [self.width, self.height]:
-                    frame = frame.resize((self.width, self.height))
+                frame = frame.resize((self.width, self.height))
                 frame = np.array(frame)
                 frame = frame.reshape(frame.shape[0], frame.shape[1], 3)
+                frames.append(frame)
 
-                frames[index] = frame
+            n_frames = len(frames)
 
-            return frames
+            
+            if n_frames > self.max_frames:
+                pass
+            elif n_frames < self.max_frames:
+                pass
+            else:
+                np.array(frames)
+
+            return np.array(frames)
 
         X = np.zeros(
             (len(filepaths), self.max_frames, self.width, self.height, 3),
