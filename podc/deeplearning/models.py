@@ -121,29 +121,39 @@ class BaseModel:
         return RuntimeError("You only call this on a subclass of Model")
 
 
+class VGG16FHC(BaseModel):
+    def generate_model(self) -> Model:
+        # This is a bastardised version of VGG16, VGG19 is probably a bit too
+        # big to run on our hardware, which is likely to limit our experiment
+        # going forward.
 
-class VGG19Image(BaseModel):
-    def generate_model(self) -> None:
-        cnn = VGG19(
-            include_top=False,
-            weights="imagenet",
-            input_shape=(self.height, self.width, 3))
+        img_input = Input(shape=(self.height, self.width, 3))
 
-        x = Sequential()
-        x.add(
-            GlobalAveragePooling2D(
-                input_shape=cnn.output_shape[1:], data_format=None))
-        x.add(Dense(512, activation="relu"))
-        x.add(Dropout(0.5))
-        x.add(Dense(1, activation="sigmoid"))
+        cnn = VGG19(include_top=False, input_tensor=img_input)
 
-        opt = Adam(
-            lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+        for layer in cnn.layers:
+            # HACK: Ensuring that the top of the model (VGG16 classifier)
+            # is set to train.
+            layer.trainable = True
 
-        model = Model(inputs=cnn.input, outputs=x(cnn.output))
+        x = Conv2D(filters=2, kernel_size=(1, 1))(cnn.output)
 
-        model.compile(
-            loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+        x = Conv2DTranspose(
+            filters=self.n_classes,
+            kernel_size=(64, 64),
+            strides=(32, 32),
+            padding="same",
+            activation="sigmoid")(x)
+
+        model = Model(inputs=img_input, outputs=x)
+
+        if self.n_classes == 1:
+            loss_func = "binary_crossentropy"
+        elif self.n_classes > 1:
+            loss_func = "categorical_crossentropy"
+
+        sgd = SGD()
+        model.compile(loss=loss_func, optimizer=sgd)
 
         return model
 
@@ -195,123 +205,4 @@ class VGG19v1(BaseModel):
         model = Model(inputs=inp, outputs=outputs)
         model.compile(
             loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
-        return model
-
-
-class SmolNet(BaseModel):
-    def generate_model(self) -> Model:
-        base_model = MobileNet(
-            input_shape=(self.height, self.width, 3), include_top=False)
-        x = base_model.output
-        x = GlobalAveragePooling2D()(x)
-        cnn_model = Model(inputs=base_model.input, outputs=x)
-
-        model = Sequential()
-        model.add(
-            TimeDistributed(
-                cnn_model,
-                input_shape=(self.max_frames, self.height, self.width, 3)))
-        model.add(TimeDistributed(Flatten()))
-
-        model.add(LSTM(1, return_sequences=True))
-
-        opt = Adam(lr=1e-4, beta_1=0.9)
-        model.compile(
-            loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
-        return model
-
-
-class VGG16FHC(BaseModel):
-    def generate_model(self) -> Model:
-        # This is a bastardised version of VGG16, VGG19 is probably a bit too
-        # big to run on our hardware, which is likely to limit our experiment
-        # going forward.
-
-        img_input = Input(shape=(self.height, self.width, 3))
-
-        cnn = VGG19(include_top=False, input_tensor=img_input)
-
-        for layer in cnn.layers:
-            # HACK: Ensuring that the top of the model (VGG16 classifier)
-            # is set to train.
-            layer.trainable = True
-
-        x = Conv2D(filters=2, kernel_size=(1, 1))(cnn.output)
-
-        x = Conv2DTranspose(
-            filters=self.n_classes,
-            kernel_size=(64, 64),
-            strides=(32, 32),
-            padding="same",
-            activation="sigmoid")(x)
-
-        model = Model(inputs=img_input, outputs=x)
-
-        if self.n_classes == 1:
-            loss_func = "binary_crossentropy"
-        elif self.n_classes > 1:
-            loss_func = "categorical_crossentropy"
-
-        sgd = SGD()
-        model.compile(loss=loss_func, optimizer=sgd)
-
-        return model
-
-
-class VGG16v1(BaseModel):
-    def generate_model(self) -> Model:
-        inp = Input(
-            shape=(self.max_frames, self.height, self.width, 3), name="input")
-
-        cnn = VGG16(weights="imagenet", include_top=False)
-
-        for layer in cnn.layers:
-            layer.trainable = False
-
-        tdcnn = TimeDistributed(cnn)(inp)
-        tdcnn = TimeDistributed(Flatten())(tdcnn)
-        tdcnn = MaxPooling1D(pool_size=self.max_frames)(tdcnn)
-
-        tdcnn = Dropout(0.5)(tdcnn)
-        tdcnn = Dense(512, activation="relu")(tdcnn)
-
-        tdcnn = Flatten()(tdcnn)
-        tdcnn = Dropout(0.5)(tdcnn)
-
-        tdcnn = Dense(1, activation="softmax")(tdcnn)
-
-        model = Model(inputs=inp, outputs=tdcnn)
-        opt = Adam(lr=1e-4, beta_1=0.9)
-        model.compile(
-            loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
-        return model
-
-
-class ResNet50v1(BaseModel):
-    def generate_model(self) -> Model:
-        inp = Input(
-            shape=(self.max_frames, self.height, self.width, 3), name="input")
-
-        cnn = InceptionV3(
-            weights="imagenet",
-            include_top=False,
-            pooling="avg",
-            input_shape=(self.height, self.width, 3))
-
-        for layer in cnn.layers:
-            layer.trainable = False
-
-        encoded_frames = TimeDistributed(Lambda(lambda x: cnn(x)))(inp)
-
-        encoded_vid = LSTM(256)(encoded_frames)
-
-        output = Dense(1, activation="sigmoid")(encoded_vid)
-
-        opt = Adam(lr=1e-4, beta_1=0.9)
-
-        model = Model(inputs=[inp], outputs=output)
-
-        model.compile(
-            loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
-
         return model

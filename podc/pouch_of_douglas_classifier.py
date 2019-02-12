@@ -22,7 +22,7 @@ import os
 import numpy as np
 import json
 from sklearn.model_selection import KFold, train_test_split
-from deeplearning import VGG16v1
+from deeplearning import VGG19v1
 
 home_dir = os.path.expanduser("~")
 slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
@@ -75,7 +75,7 @@ for train_index, test_index in kf.split(video_ids):
         batch_size=2,
         n_jobs=-1)
 
-    clf = VGG16v1(
+    clf = VGG19v1(
         _HEIGHT, _WIDTH, results_dir, n_classes=1, max_frames=_MAX_FRAMES)
 
     clf.fit(train_vg, val_vg, epochs=1000, patience=50)
