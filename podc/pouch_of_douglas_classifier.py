@@ -31,7 +31,7 @@ results_dir = os.path.join(slidingsign_dir, "results")
 
 _WIDTH = 122
 _HEIGHT = 122
-_MAX_FRAMES = 150
+_MAX_FRAMES = 200
 
 with open(os.path.join(slidingsign_dir, "labels.json"), "r") as infile:
     labels = json.load(infile)

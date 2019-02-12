@@ -288,16 +288,25 @@ class VideoDataGenerator(Sequence):
                 frames.append(frame)
 
             n_frames = len(frames)
-
             
+            rnge = list(range(n_frames))
+
             if n_frames > self.max_frames:
-                pass
+                rand_rnge = random.sample(rnge, self.max_frames)
+                rand_rnge = sorted(rand_rnge)
+                frames = np.array(frames)[rand_rnge]
+
             elif n_frames < self.max_frames:
-                pass
+                diff = self.max_frames - n_frames
+                for i in range(diff):
+                    choice = random.choice(rnge)
+                    copy = frames[choice]
+                    frames.insert(choice, copy)
+                frames = np.array(frames)
             else:
                 np.array(frames)
 
-            return np.array(frames)
+            return frames
 
         X = np.zeros(
             (len(filepaths), self.max_frames, self.width, self.height, 3),
