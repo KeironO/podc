@@ -162,7 +162,7 @@ class VGG19v1(BaseModel):
     def generate_model(self) -> Model:
         inp = Input(
             shape=(self.max_frames, self.height, self.width, 3), name="input")
-        cnn = VGG19(include_top=False)
+        cnn = VGG16(include_top=False)
 
         for layer in cnn.layers:
             layer.trainable = False
