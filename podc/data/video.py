@@ -278,7 +278,7 @@ class VideoDataGenerator(Sequence):
             video = imageio.get_reader(filepath, "ffmpeg")
 
             frames = []
-            # Need to extrapolate.
+
             for frame in video:
                 frame = frame.view(type=np.ndarray)
                 frame = Image.fromarray(frame)
@@ -288,14 +288,12 @@ class VideoDataGenerator(Sequence):
                 frames.append(frame)
 
             n_frames = len(frames)
-            
             rnge = list(range(n_frames))
 
             if n_frames > self.max_frames:
                 rand_rnge = random.sample(rnge, self.max_frames)
                 rand_rnge = sorted(rand_rnge)
                 frames = np.array(frames)[rand_rnge]
-
             elif n_frames < self.max_frames:
                 diff = self.max_frames - n_frames
                 for i in range(diff):

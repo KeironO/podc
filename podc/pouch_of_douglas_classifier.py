@@ -29,19 +29,16 @@ slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
 data_dir = os.path.join(slidingsign_dir, "videos")
 results_dir = os.path.join(slidingsign_dir, "results")
 
-_WIDTH = 122
-_HEIGHT = 122
-_MAX_FRAMES = 200
+_WIDTH = 64
+_HEIGHT = 64
+_MAX_FRAMES = 20
 
 with open(os.path.join(slidingsign_dir, "labels.json"), "r") as infile:
     labels = json.load(infile)
 
-del labels["20_0001.AVI"]
-del labels["20_0000.AVI"]
-
 video_ids = np.array(list(labels.keys()))
 
-kf = KFold(n_splits=10)
+kf = KFold(n_splits=5)
 
 for train_index, test_index in kf.split(video_ids):
     train_index, val_index = train_test_split(train_index, test_size=0.2)
@@ -53,25 +50,10 @@ for train_index, test_index in kf.split(video_ids):
         height=_HEIGHT,
         width=_WIDTH,
         max_frames=_MAX_FRAMES,
-        batch_size=int(len(train_index) / 8),
+        batch_size=8,
         upsample=True,
         shuffle=True,
         n_jobs=-1)
-
-    import matplotlib.pyplot as plt
-    import matplotlib.animation as animation
-
-    for X, y in train_vg:
-        for indx in range(X.shape[0]):
-            fig = plt.figure()
-            ims = []
-            for frame in X[indx]:
-                ims.append([plt.imshow(frame)])
-            ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True)
-            plt.show()
-            break
-
-        exit(0)
 
     val_vg = VideoDataGenerator(
         data_dir,
@@ -80,7 +62,7 @@ for train_index, test_index in kf.split(video_ids):
         height=_HEIGHT,
         width=_WIDTH,
         max_frames=_MAX_FRAMES,
-        batch_size=int(len(val_index) / 8),
+        batch_size=8,
         n_jobs=-1)
 
     test_vg = VideoDataGenerator(
@@ -90,7 +72,7 @@ for train_index, test_index in kf.split(video_ids):
         height=_HEIGHT,
         width=_WIDTH,
         max_frames=_MAX_FRAMES,
-        batch_size=int(len(test_index) / 8),
+        batch_size=2,
         n_jobs=-1)
 
     clf = VGG16v1(
