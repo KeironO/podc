@@ -29,9 +29,9 @@ slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
 data_dir = os.path.join(slidingsign_dir, "videos")
 results_dir = os.path.join(slidingsign_dir, "results")
 
-_WIDTH = 64
-_HEIGHT = 64
-_MAX_FRAMES = 20
+_WIDTH = 124
+_HEIGHT = 124
+_MAX_FRAMES = 120
 
 with open(os.path.join(slidingsign_dir, "labels.json"), "r") as infile:
     labels = json.load(infile)
