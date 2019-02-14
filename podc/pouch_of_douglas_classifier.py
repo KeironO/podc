@@ -24,36 +24,81 @@ import json
 from sklearn.model_selection import KFold, train_test_split
 from deeplearning import VGG19v1
 from utils import Inference
-
+from itertools import product
 
 home_dir = os.path.expanduser("~")
 slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
 data_dir = os.path.join(slidingsign_dir, "videos")
 results_dir = os.path.join(slidingsign_dir, "results")
 
-_WIDTH = 32
-_HEIGHT = 32
-_MAX_FRAMES = 2
-
 with open(os.path.join(slidingsign_dir, "labels.json"), "r") as infile:
     labels = json.load(infile)
 
 video_ids = np.array(list(labels.keys()))
 
+parameter_grid = {
+    "data": {
+        "height": 32,
+        "width": 32,
+        "max_frames": 50
+    },
+    "training": {
+        "train_batch_size": 8,
+        "val_batch_size": 2,
+        "test_batch_size": 1,
+        "epochs": 100,
+        "patience": 10
+    },
+    "model": {
+        "hid_states": {
+            "filter": 128,
+            "kernel_size": (1, 1),
+            "recurrent_dropout": 0.5,
+            "dropout": 0.5
+        },
+        "conv_hid_states": {
+            "filter": 128,
+            "kernel_size": (2, 2)
+        },
+        "conv_acts": {
+            "filter": 128,
+            "kernel_size": (2, 2)
+        },
+        "eunice": {
+            "filter": 1,
+            "kernel_size": (1, 1)
+        },
+        "nn": {
+            "filter": 128,
+            "kernel_size": (1, 1),
+            "recurrent_dropout": 0.5,
+            "dropout": 0.5
+        },
+        "opt": {
+            "lr": 1e-4,
+            "beta_1": 0.9
+        }
+    }
+}
+
+
+y_true = []
+y_pred = []
+
 kf = KFold(n_splits=10)
 
 for train_index, test_index in kf.split(video_ids):
-    break
+
     train_index, val_index = train_test_split(train_index, test_size=0.2)
 
     train_vg = VideoDataGenerator(
         data_dir,
         video_ids[train_index],
         labels,
-        height=_HEIGHT,
-        width=_WIDTH,
-        max_frames=_MAX_FRAMES,
-        batch_size=8,
+        height=parameter_grid["data"]["height"],
+        width=parameter_grid["data"]["height"],
+        max_frames=parameter_grid["data"]["max_frames"],
+        batch_size=parameter_grid["training"]["train_batch_size"],
         upsample=True,
         shuffle=True,
         n_jobs=-1)
@@ -62,26 +107,36 @@ for train_index, test_index in kf.split(video_ids):
         data_dir,
         video_ids[val_index],
         labels,
-        height=_HEIGHT,
-        width=_WIDTH,
-        max_frames=_MAX_FRAMES,
-        batch_size=8,
+        height=parameter_grid["data"]["height"],
+        width=parameter_grid["data"]["height"],
+        max_frames=parameter_grid["data"]["max_frames"],
+        batch_size=parameter_grid["training"]["val_batch_size"],
         n_jobs=-1)
 
     test_vg = VideoDataGenerator(
         data_dir,
         video_ids[test_index],
         labels,
-        height=_HEIGHT,
-        width=_WIDTH,
-        max_frames=_MAX_FRAMES,
-        batch_size=2,
+        height=parameter_grid["data"]["height"],
+        width=parameter_grid["data"]["height"],
+        max_frames=parameter_grid["data"]["max_frames"],
+        batch_size=parameter_grid["training"]["test_batch_size"],
         n_jobs=-1)
 
     clf = VGG19v1(
-        _HEIGHT, _WIDTH, results_dir, max_frames=_MAX_FRAMES)
+        parameter_grid["data"]["height"],
+        parameter_grid["data"]["width"],
+        results_dir,
+        max_frames=parameter_grid["data"]["max_frames"],
+        model_parameters=parameter_grid["model"]
+        )
 
-    clf.fit(train_vg, val_vg, epochs=0, patience=50)
+    clf.fit(
+        train_vg,
+        val_vg,
+        epochs=parameter_grid["training"]["epochs"],
+        patience=parameter_grid["training"]["patience"])
+
     ground_truths, model_predictions = clf.predict_pod(test_vg)
     y_true.extend(ground_truths)
     y_pred.extend(model_predictions)

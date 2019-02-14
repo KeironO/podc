@@ -29,11 +29,8 @@ from keras.layers import (Add, GlobalAveragePooling2D, Dense, Lambda, Multiply,
                           Dropout, GlobalMaxPool2D, MaxPooling1D, Flatten,
                           Input, LSTM, TimeDistributed, Activation, Conv2D,
                           Conv2DTranspose, ConvLSTM2D)
-from keras.callbacks import (
-    EarlyStopping,
-    History,
-    ModelCheckpoint,
-)
+from keras.callbacks import (EarlyStopping, History, ModelCheckpoint,
+                             ReduceLROnPlateau)
 
 class BaseModel:
     def __init__(self,
@@ -43,6 +40,7 @@ class BaseModel:
                  n_classes: int = 1,
                  max_frames: int = 1,
                  n_channels: int = 3,
+                 model_parameters: dict = False,
                  output_type: str = "categorical") -> None:
 
         self.height = int(height)
@@ -50,6 +48,7 @@ class BaseModel:
         self.output_dir = output_dir
         self.n_classes = n_classes
         self.max_frames = max_frames
+        self.model_parameters = model_parameters
         self.trained = False
         self.model_fp = join(output_dir, "model.h5")
 
@@ -80,13 +79,20 @@ class BaseModel:
 
         es = EarlyStopping(monitor="val_loss", verbose=1, patience=patience)
 
+        reduce_lr = ReduceLROnPlateau(
+            monitor="val_loss",
+            factor=0.2,
+            patience=int(patience/2),
+            min_lr=1e-9
+            )
+
         clf = self.model
 
         if class_weights:
             history = clf.fit_generator(
                 generator,
                 epochs=epochs,
-                callbacks=[hi, mc, es],
+                callbacks=[hi, mc, es, reduce_lr],
                 validation_data=val_generator,
                 verbose=1,
                 class_weight=class_weights)
@@ -94,7 +100,7 @@ class BaseModel:
             history = clf.fit_generator(
                 generator,
                 epochs=epochs,
-                callbacks=[hi, mc, es],
+                callbacks=[hi, mc, es, reduce_lr],
                 validation_data=val_generator,
                 verbose=1)
 
@@ -155,7 +161,43 @@ class VGG16FHC(BaseModel):
 
 
 class VGG19v1(BaseModel):
+
+    default_parameters = {
+        "hid_states": {
+            "filter": 512,
+            "kernel_size": (3, 3),
+            "recurrent_dropout": 0.2,
+            "dropout": 0.2
+        },
+        "conv_hid_states": {
+            "filter": 512,
+            "kernel_size": (1, 1)
+        },
+        "conv_acts": {
+            "filters": 512,
+            "kernel_size": (1, 1)
+        },
+        "eunice": {
+            "filters": 1,
+            "kernel_size": (1, 1)
+        },
+        "nn": {
+            "filter": 512,
+            "kernel_size": (3, 3),
+            "recurrent_dropout": 0.2,
+            "dropout": 0.2
+        },
+        "opt": {
+            "lr": 1e-4,
+            "beta_1": 0.9
+        }
+    }
+
     def generate_model(self) -> Model:
+
+        if not self.model_parameters:
+            self.model_parameters = self.default_parameters
+
         inp = Input(
             shape=(self.max_frames, self.height, self.width, 3), name="input")
         cnn = VGG16(include_top=False)
@@ -165,38 +207,60 @@ class VGG19v1(BaseModel):
 
         frame_acts = TimeDistributed(cnn)(inp)
 
+        lp = self.model_parameters["hid_states"]
         hid_states = ConvLSTM2D(
-            512, (3, 3),
+            lp["filter"],
+            lp["kernel_size"],
             padding="same",
             return_sequences=True,
-            recurrent_dropout=0.2,
-            dropout=0.2)(frame_acts)
+            recurrent_dropout=lp["recurrent_dropout"],
+            dropout=lp["dropout"])(frame_acts)
 
+        lp = self.model_parameters["conv_hid_states"]
         conv_hid_states = TimeDistributed(
-            Conv2D(512, (1, 1), activation="relu", padding="same"))(hid_states)
+            Conv2D(
+                lp["filter"],
+                lp["kernel_size"],
+                activation="relu",
+                padding="same"))(hid_states)
 
+        lp = self.model_parameters["conv_acts"]
         conv_acts = TimeDistributed(
-            Conv2D(512, (1, 1), activation="relu", padding="same"))(frame_acts)
+            Conv2D(
+                lp["filter"],
+                lp["kernel_size"],
+                activation="relu",
+                padding="same"))(frame_acts)
 
         acct = Activation(activation="tanh")(
             Add()([conv_acts, conv_hid_states]))
 
+        lp = self.model_parameters["eunice"]
         eunice = TimeDistributed(
-            Conv2D(1, (1, 1), activation="relu", padding="same"))(acct)
+            Conv2D(
+                lp["filter"],
+                lp["kernel_size"],
+                activation="relu",
+                padding="same"))(acct)
 
         att = Activation(activation="softmax")(eunice)
 
         nn = Multiply()([frame_acts, att])
 
+        lp = self.model_parameters["nn"]
         nn = ConvLSTM2D(
-            512, (3, 3), padding="same", recurrent_dropout=0.2,
-            dropout=0.2)(nn)
+            lp["filter"],
+            lp["kernel_size"],
+            padding="same",
+            recurrent_dropout=lp["recurrent_dropout"],
+            dropout=lp["dropout"])(nn)
 
         nn = GlobalMaxPool2D()(nn)
 
         outputs = Dense(1, activation="sigmoid")(nn)
 
-        opt = Adam(lr=1e-4, beta_1=0.9)
+        lp = self.model_parameters["opt"]
+        opt = Adam(lr=lp["lr"], beta_1=lp["beta_1"])
 
         model = Model(inputs=inp, outputs=outputs)
         model.compile(

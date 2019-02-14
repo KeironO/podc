@@ -135,4 +135,12 @@ class Inference:
             return Exception("This is only available for comparing multiple models")
 
     def to_dict(self):
-        pass
+        results = {}
+        results["y_pred"] = self.y_pred
+        results["y_true"] = self.y_true
+        results["y_predC"] = self.y_predC
+        results["cm"] = self.confusion_matrix()
+        results["classification_report"] = self.classification_report()
+        results["precision"] = self.precision()
+        results["recall"] = self.recall()
+
