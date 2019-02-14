@@ -75,7 +75,7 @@ parameter_grid = {
             "dropout": 0.5
         },
         "opt": {
-            "lr": 1e-4,
+            "lr": 0.01,
             "beta_1": 0.9
         }
     }
@@ -101,6 +101,10 @@ for train_index, test_index in kf.split(video_ids):
         batch_size=parameter_grid["training"]["train_batch_size"],
         upsample=True,
         shuffle=True,
+        shear_range=0.2,
+        rotation_range=0.2,
+        vertical_flip=True,
+        zoom_range=0.1,
         n_jobs=-1)
 
     val_vg = VideoDataGenerator(
