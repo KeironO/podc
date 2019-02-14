@@ -18,6 +18,8 @@ Boston, MA 02110-1301 USA
 '''
 
 from os.path import isfile, join
+import numpy as np
+import itertools
 from keras.models import Sequential, Model
 from keras.models import load_model as k_load_model
 from keras.engine import Model
@@ -38,7 +40,7 @@ class BaseModel:
                  height: int,
                  width: int,
                  output_dir: str,
-                 n_classes: int,
+                 n_classes: int = 1,
                  max_frames: int = 1,
                  n_channels: int = 3,
                  output_type: str = "categorical") -> None:
@@ -100,22 +102,16 @@ class BaseModel:
         self.history = history
         self.trained = True
 
-
     def predict_pod(self, generator):
-        y_true = [y for _, y in generator]
+        y_true = []
+        y_pred = []
+        for X, y in generator:
+            predictions = list(itertools.chain.from_iterable(self.model.predict(X)))
 
-        y_true = ["Yes" if (x == 1) else "No" for x in y_true]
-        y_pred = self.model.predict_generator(generator)
-        y_preds = []
-        for index, pred in enumerate(y_pred):
-            if float(pred) >= 0.75:
-                y_preds.append("Yes")
-            elif float(pred) <= 0.35:
-                y_preds.append("No")
-            else:
-                y_preds.append("Unsure")
+            y_true.extend(y)
+            y_pred.extend(predictions)
 
-        return y_true, y_preds
+        return y_true, y_pred
 
     def generate_model(self) -> RuntimeError:
         return RuntimeError("You only call this on a subclass of Model")

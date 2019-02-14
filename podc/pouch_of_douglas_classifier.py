@@ -23,24 +23,27 @@ import numpy as np
 import json
 from sklearn.model_selection import KFold, train_test_split
 from deeplearning import VGG19v1
+from utils import Inference
+
 
 home_dir = os.path.expanduser("~")
 slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
 data_dir = os.path.join(slidingsign_dir, "videos")
 results_dir = os.path.join(slidingsign_dir, "results")
 
-_WIDTH = 124
-_HEIGHT = 124
-_MAX_FRAMES = 120
+_WIDTH = 32
+_HEIGHT = 32
+_MAX_FRAMES = 2
 
 with open(os.path.join(slidingsign_dir, "labels.json"), "r") as infile:
     labels = json.load(infile)
 
 video_ids = np.array(list(labels.keys()))
 
-kf = KFold(n_splits=5)
+kf = KFold(n_splits=10)
 
 for train_index, test_index in kf.split(video_ids):
+    break
     train_index, val_index = train_test_split(train_index, test_size=0.2)
 
     train_vg = VideoDataGenerator(
@@ -76,10 +79,18 @@ for train_index, test_index in kf.split(video_ids):
         n_jobs=-1)
 
     clf = VGG19v1(
-        _HEIGHT, _WIDTH, results_dir, n_classes=1, max_frames=_MAX_FRAMES)
+        _HEIGHT, _WIDTH, results_dir, max_frames=_MAX_FRAMES)
 
-    clf.fit(train_vg, val_vg, epochs=1000, patience=50)
-    pred = clf.predict_pod(test_vg)
-    print(pred)
-    exit(0)
+    clf.fit(train_vg, val_vg, epochs=0, patience=50)
+    ground_truths, model_predictions = clf.predict_pod(test_vg)
+    y_true.extend(ground_truths)
+    y_pred.extend(model_predictions)
     break
+
+inf = Inference(y_true, y_pred)
+
+inf.roc_curve()
+
+print(inf.confusion_matrix())
+print(inf.npv(), inf.ppv())
+print(inf.confusion_matrix())
