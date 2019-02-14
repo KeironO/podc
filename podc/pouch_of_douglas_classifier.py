@@ -37,16 +37,16 @@ video_ids = np.array(list(labels.keys()))
 
 parameter_grid = {
     "data": {
-        "height": 64,
-        "width": 64,
-        "max_frames": 80
+        "height": 124,
+        "width": 124,
+        "max_frames": 100
     },
     "training": {
         "train_batch_size": 8,
         "val_batch_size": 2,
         "test_batch_size": 1,
         "epochs": 1000,
-        "patience": 30
+        "patience": 50
     },
     "model": {
         "hid_states": {
