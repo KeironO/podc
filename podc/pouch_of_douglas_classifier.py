@@ -38,9 +38,9 @@ video_ids = np.array(list(labels.keys()))
 
 parameter_grid = {
     "data": {
-        "height": 32,
-        "width": 32,
-        "max_frames": 50
+        "height": 64,
+        "width": 64,
+        "max_frames": 80
     },
     "training": {
         "train_batch_size": 8,
@@ -88,7 +88,7 @@ y_pred = []
 kf = KFold(n_splits=10)
 
 for train_index, test_index in kf.split(video_ids):
-
+    break
     train_index, val_index = train_test_split(train_index, test_size=0.2)
 
     train_vg = VideoDataGenerator(
@@ -144,12 +144,8 @@ for train_index, test_index in kf.split(video_ids):
     ground_truths, model_predictions = clf.predict_pod(test_vg)
     y_true.extend(ground_truths)
     y_pred.extend(model_predictions)
-    break
 
 inf = Inference(y_true, y_pred)
 
-inf.roc_curve()
-
-print(inf.confusion_matrix())
-print(inf.npv(), inf.ppv())
-print(inf.confusion_matrix())
+with open(results_dir + "/10kf_results.json", "w") as outfile:
+    json.dump(inf.to_dict(), outfile, indent=4)

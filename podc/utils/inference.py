@@ -51,7 +51,7 @@ class Inference:
         # of it belonging to the FIRST class (0).
         if self._multi_model:
             return [
-                (np.array(x) < 0.5).astype(np.int) for x in self.y_pred
+                (np.array(x) > 0.5).astype(np.int) for x in self.y_pred
             ]
         else:
             return (np.array(self.y_pred) < 0.5).astype(np.int)
@@ -138,9 +138,10 @@ class Inference:
         results = {}
         results["y_pred"] = self.y_pred
         results["y_true"] = self.y_true
-        results["y_predC"] = self.y_predC
-        results["cm"] = self.confusion_matrix()
+        results["y_predC"] = self.y_predC.tolist()
+        results["cm"] = self.confusion_matrix().tolist()
         results["classification_report"] = self.classification_report()
         results["precision"] = self.precision()
         results["recall"] = self.recall()
+        return results
 
