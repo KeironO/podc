@@ -88,7 +88,6 @@ y_pred = []
 kf = KFold(n_splits=10)
 
 for train_index, test_index in kf.split(video_ids):
-    break
     train_index, val_index = train_test_split(train_index, test_size=0.2)
 
     train_vg = VideoDataGenerator(
@@ -133,6 +132,7 @@ for train_index, test_index in kf.split(video_ids):
         results_dir,
         max_frames=parameter_grid["data"]["max_frames"],
         model_parameters=parameter_grid["model"]
+
         )
 
     clf.fit(
