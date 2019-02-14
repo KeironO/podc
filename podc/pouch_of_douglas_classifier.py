@@ -103,7 +103,6 @@ for train_index, test_index in kf.split(video_ids):
         shear_range=0.2,
         rotation_range=0.2,
         vertical_flip=True,
-        zoom_range=0.1,
         n_jobs=-1)
 
     val_vg = VideoDataGenerator(
