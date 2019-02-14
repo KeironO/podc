@@ -24,7 +24,6 @@ import json
 from sklearn.model_selection import KFold, train_test_split
 from deeplearning import VGG19v1
 from utils import Inference
-from itertools import product
 
 home_dir = os.path.expanduser("~")
 slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
@@ -46,8 +45,8 @@ parameter_grid = {
         "train_batch_size": 8,
         "val_batch_size": 2,
         "test_batch_size": 1,
-        "epochs": 100,
-        "patience": 10
+        "epochs": 1000,
+        "patience": 30
     },
     "model": {
         "hid_states": {
@@ -131,7 +130,6 @@ for train_index, test_index in kf.split(video_ids):
         results_dir,
         max_frames=parameter_grid["data"]["max_frames"],
         model_parameters=parameter_grid["model"]
-
         )
 
     clf.fit(
