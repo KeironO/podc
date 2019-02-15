@@ -189,7 +189,9 @@ class VGG19v1(BaseModel):
         },
         "opt": {
             "lr": 1e-4,
-            "beta_1": 0.9
+            "beta_1": 0.9,
+            "beta_2": 0.9,
+            "decay": 0.0
         }
     }
 
@@ -260,7 +262,12 @@ class VGG19v1(BaseModel):
         outputs = Dense(1, activation="sigmoid")(nn)
 
         lp = self.model_parameters["opt"]
-        opt = Adam(lr=lp["lr"], beta_1=lp["beta_1"])
+        opt = Adam(
+            lr=lp["lr"],
+            beta_1=lp["beta_1"],
+            beta_2=lp["beta_2"],
+            decay=lp["decay"]
+            )
 
         model = Model(inputs=inp, outputs=outputs)
         model.compile(

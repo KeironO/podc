@@ -37,9 +37,9 @@ video_ids = np.array(list(labels.keys()))
 
 parameter_grid = {
     "data": {
-        "height": 124,
-        "width": 124,
-        "max_frames": 100
+        "height": 64,
+        "width": 64,
+        "max_frames": 80
     },
     "training": {
         "train_batch_size": 8,
@@ -51,31 +51,33 @@ parameter_grid = {
     "model": {
         "hid_states": {
             "filter": 128,
-            "kernel_size": (1, 1),
+            "kernel_size": (4, 4),
             "recurrent_dropout": 0.5,
             "dropout": 0.5
         },
         "conv_hid_states": {
-            "filter": 128,
-            "kernel_size": (2, 2)
+            "filter": 64,
+            "kernel_size": (4, 4)
         },
         "conv_acts": {
-            "filter": 128,
-            "kernel_size": (2, 2)
+            "filter": 64,
+            "kernel_size": (4, 4)
         },
         "eunice": {
             "filter": 1,
-            "kernel_size": (1, 1)
+            "kernel_size": (4, 4)
         },
         "nn": {
             "filter": 128,
-            "kernel_size": (1, 1),
+            "kernel_size": (4, 4),
             "recurrent_dropout": 0.5,
             "dropout": 0.5
         },
         "opt": {
             "lr": 0.01,
-            "beta_1": 0.9
+            "beta_1": 0.9,
+            "beta_2": 0.9,
+            "decay": 0.0
         }
     }
 }
@@ -141,6 +143,7 @@ for train_index, test_index in kf.split(video_ids):
     ground_truths, model_predictions = clf.predict_pod(test_vg)
     y_true.extend(ground_truths)
     y_pred.extend(model_predictions)
+    break
 
 inf = Inference(y_true, y_pred)
 
