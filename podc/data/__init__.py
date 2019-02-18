@@ -18,5 +18,5 @@ Boston, MA 02110-1301 USA
 '''
 
 from __future__ import absolute_import
-from .video import VideoDataGenerator
+from .video import VideoDataGenerator, VideoDataLoader
 from .image import FHCDataGenerator

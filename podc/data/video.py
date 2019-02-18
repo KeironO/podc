@@ -34,6 +34,71 @@ COL_AXIS = 1
 CHANNEL_AXIS = 2
 
 
+class VideoDataLoader:
+    def __init__(self, data_dir, labels, ids, n_jobs=-1):
+        self.data_dir = data_dir
+        self.labels = labels
+        self.ids = ids
+        self.n_jobs = n_jobs
+
+    def _load_video(self, id, max_frames, height, width):
+
+        filepath = join(self.data_dir, id)
+
+        video = imageio.get_reader(filepath, "ffmpeg")
+
+        frames = []
+
+        for frame in video:
+            frame = frame.view(type=np.ndarray)
+            frame = Image.fromarray(frame)
+            frame = frame.resize((width, height))
+            frame = np.array(frame)
+            frame = frame.reshape(frame.shape[0], frame.shape[1], 3)
+            frames.append(frame)
+
+        n_frames = len(frames)
+        rnge = list(range(n_frames))
+
+        if n_frames > max_frames:
+            rand_rnge = random.sample(rnge, max_frames)
+            rand_rnge = sorted(rand_rnge)
+            frames = np.array(frames)[rand_rnge]
+        elif n_frames < max_frames:
+            diff = max_frames - n_frames
+            for i in range(diff):
+                choice = random.choice(rnge)
+                copy = frames[choice]
+                frames.insert(choice, copy)
+            frames = np.array(frames)
+        else:
+            np.array(frames)
+
+        return frames, self.labels[id]
+
+    def get_data(self, height, width, n_frames):
+
+        X = np.zeros((len(self.ids), n_frames, height, width, 3))
+        y = []
+
+        if self.n_jobs == -1:
+            self.n_jobs = cpu_count()
+        if self.n_jobs > 1:
+            data = Parallel(
+                n_jobs=self.n_jobs, prefer="threads")(
+                    delayed(self._load_video)(id, n_frames, height, width)
+                    for id in self.ids)
+        else:
+            data = [self._load_video(x, n_frames, height, width) for x in self.ids]
+
+        for indx in range(len(data)):
+            x, _y = data[indx]
+            X[indx] = x
+            y.append(_y)
+
+        return X, np.array(y)
+
+
 class VideoDataGenerator(Sequence):
     def __init__(self,
                  directory,

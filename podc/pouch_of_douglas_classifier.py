@@ -17,7 +17,7 @@ Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301 USA
 '''
 
-from data import VideoDataGenerator
+from data import VideoDataGenerator, VideoDataLoader
 import os
 import numpy as np
 import json
@@ -82,6 +82,17 @@ parameter_grid = {
     }
 }
 
+
+vdl = VideoDataLoader(data_dir, labels, video_ids)
+X, y = vdl.get_data(
+    parameter_grid["data"]["height"],
+    parameter_grid["data"]["width"],
+    parameter_grid["data"]["max_frames"]
+)
+
+print(X.shape)
+
+exit(0)
 
 y_true = []
 y_pred = []
