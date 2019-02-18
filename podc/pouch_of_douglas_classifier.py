@@ -39,7 +39,7 @@ parameter_grid = {
     "data": {
         "height": 64,
         "width": 64,
-        "max_frames": 80
+        "max_frames": 20
     },
     "training": {
         "train_batch_size": 8,
@@ -83,14 +83,22 @@ parameter_grid = {
 }
 
 
-vdl = VideoDataLoader(data_dir, labels, video_ids)
+vdl = VideoDataLoader(data_dir, labels, video_ids[0:16])
 X, y = vdl.get_data(
     parameter_grid["data"]["height"],
     parameter_grid["data"]["width"],
     parameter_grid["data"]["max_frames"]
 )
 
-print(X.shape)
+
+train_vg = VideoDataGenerator(X, y, 
+        batch_size=parameter_grid["training"]["train_batch_size"],
+        upsample=True,
+        shuffle=True,
+        shear_range=0.2,
+        rotation_range=0.2,
+        vertical_flip=True,
+        n_jobs=-1)
 
 exit(0)
 

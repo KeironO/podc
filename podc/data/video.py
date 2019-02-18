@@ -101,9 +101,8 @@ class VideoDataLoader:
 
 class VideoDataGenerator(Sequence):
     def __init__(self,
-                 directory,
-                 filenames,
-                 labels,
+                 X,
+                 y,
                  batch_size,
                  shuffle=False,
                  height=224,
@@ -340,91 +339,4 @@ class VideoDataGenerator(Sequence):
             return x
 
         def ___read(filepath):
-            video = imageio.get_reader(filepath, "ffmpeg")
-
-            frames = []
-
-            for frame in video:
-                frame = frame.view(type=np.ndarray)
-                frame = Image.fromarray(frame)
-                frame = frame.resize((self.width, self.height))
-                frame = np.array(frame)
-                frame = frame.reshape(frame.shape[0], frame.shape[1], 3)
-                frames.append(frame)
-
-            n_frames = len(frames)
-            rnge = list(range(n_frames))
-
-            if n_frames > self.max_frames:
-                rand_rnge = random.sample(rnge, self.max_frames)
-                rand_rnge = sorted(rand_rnge)
-                frames = np.array(frames)[rand_rnge]
-            elif n_frames < self.max_frames:
-                diff = self.max_frames - n_frames
-                for i in range(diff):
-                    choice = random.choice(rnge)
-                    copy = frames[choice]
-                    frames.insert(choice, copy)
-                frames = np.array(frames)
-            else:
-                np.array(frames)
-
-            return frames
-
-        X = np.zeros(
-            (len(filepaths), self.max_frames, self.width, self.height, 3),
-            dtype="uint8"
-            )
-        y = []
-
-        def _do(filepath):
-            x = ___read(filepath)
-
-            if self.featurewise_center:
-                x = __featurewise_centre(x)
-
-            if self.gaussian_blur:
-                x = __gaussian_blur(x)
-
-            if self.rotation_range:
-                x = ___random_rotation(x, self.rotation_range)
-
-            if self.horizontal_flip:
-                # coinflip
-                if random.randint(0, 1) == 1:
-                    x = __flip_axis(x, ROW_AXIS)
-
-            if self.vertical_flip:
-                if random.randint(0, 1) == 1:
-                    x = __flip_axis(x, COL_AXIS)
-
-            if self.shear_range:
-                x = __random_shear(x, self.shear_range)
-
-            if self.brightness_range:
-                raise NotImplementedError("Brightness yet to be implemented")
-
-            if self.zoom_range:
-                x = __random_zoom(x, self.zoom_range)
-
-            if self.optical_flow:
-                x = __optical_flow(x, window_size=self.optical_flow)
-
-            return x, self.labels["".join(
-                splitext(basename(filepath)))]
-
-        if self.n_jobs == -1:
-            self.n_jobs = cpu_count()
-        if self.n_jobs > 1:
-            data = Parallel(
-                n_jobs=self.n_jobs,
-                prefer="threads")(delayed(_do)(fp) for fp in filepaths)
-        else:
-            data = [_do(fp) for fp in filepaths]
-
-        for indx in range(len(data)):
-            x, _y = data[indx]
-            X[indx] = x
-            y.append(_y)
-
-        return X, y
+            
