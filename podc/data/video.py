@@ -143,13 +143,7 @@ class VideoDataGenerator(Sequence):
         self.vertical_flip = vertical_flip
         self.n_jobs = n_jobs
 
-        self._generate_filepaths()
         self.on_epoch_end()
-
-    def _generate_filepaths(self):
-        self.filepaths = np.array(
-            [join(self.directory, x) for x in self.filenames]
-            )
 
     def _upsample(self):
 
@@ -167,24 +161,24 @@ class VideoDataGenerator(Sequence):
         smol_indx = [indx for indx, x in enumerate(self.y) if x == smallest]
 
         for i in range(X_shape[0]):
-            new_X[i] = X[i]
+            new_X[i] = self.X[i]
             new_y.append(self.y[i])
 
         for i in range(counter[largest] - counter[smallest]):
             random_indx = random.choice(smol_indx)
-            indx = X.shape[0] + i
+            indx = self.X.shape[0] + i
 
-            new_X[indx] = X[random_indx]
-            new_y.append(self.y[indx])
+            new_X[indx] = self.X[random_indx]
+            new_y.append(self.y[random_indx])
 
         self.X = new_X
         self.y = np.array(new_y)
 
     def __len__(self):
-        return int(np.floor(len(self.filepaths) / self.batch_size))
+        return int(np.floor(self.X.shape[0] / self.batch_size))
 
     def on_epoch_end(self):
-        self.indexes = np.arange(len(self.filepaths))
+        self.indexes = np.arange(self.X.shape[0])
         if self.shuffle is True:
             np.random.shuffle(self.indexes)
 
@@ -192,11 +186,14 @@ class VideoDataGenerator(Sequence):
         indxs = self.indexes[index * self.batch_size:self.batch_size * (
             index + 1)]
 
-        X, y = self.__data_generation(self.filepaths[indxs])
+        X = self.X[indxs]
+        y = self.y[indxs]
+
+        X = self.__data_generation(X)
 
         return X, y
 
-    def __data_generation(self, filepaths):
+    def __data_generation(self, X):
         def ___random_rotation(x,
                                rg,
                                fill_mode="nearest",
@@ -351,4 +348,6 @@ class VideoDataGenerator(Sequence):
                     cval=cval)
             return x
 
+        # Do the transformations here.
+        for index in X.shape[0]:
         
