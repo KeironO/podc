@@ -119,9 +119,9 @@ class VideoDataGenerator(Sequence):
                  horizontal_flip=False,
                  vertical_flip=False,
                  n_jobs=-1):
-        self.directory = directory
-        self.filenames = filenames
-        self.labels = labels
+
+        self.X = X
+        self.y = y
 
         if upsample:
             self._upsample()
@@ -152,20 +152,33 @@ class VideoDataGenerator(Sequence):
             )
 
     def _upsample(self):
-        labels = {x: self.labels[x] for x in self.filenames}
 
-        counter = Counter(labels.values())
+        counter = Counter(self.y)
 
         smallest = min(counter, key=counter.get)
         largest = max(counter, key=counter.get)
 
-        smol = [x for x in labels if self.labels[x] == smallest]
-        tmp_filenames = self.filenames.tolist()
+        X_shape = self.X.shape
+        new_size = X_shape[0] + (counter[largest] - counter[smallest])
+
+        new_X = np.zeros((new_size, X_shape[1], X_shape[2], X_shape[3], X_shape[4]))
+        new_y = []
+
+        smol_indx = [indx for indx, x in enumerate(self.y) if x == smallest]
+
+        for i in range(X_shape[0]):
+            new_X[i] = X[i]
+            new_y.append(self.y[i])
 
         for i in range(counter[largest] - counter[smallest]):
-            random_filename = random.choice(smol)
-            tmp_filenames.append(random_filename)
-        self.filenames = np.array(tmp_filenames)
+            random_indx = random.choice(smol_indx)
+            indx = X.shape[0] + i
+
+            new_X[indx] = X[random_indx]
+            new_y.append(self.y[indx])
+
+        self.X = new_X
+        self.y = np.array(new_y)
 
     def __len__(self):
         return int(np.floor(len(self.filepaths) / self.batch_size))
@@ -338,5 +351,4 @@ class VideoDataGenerator(Sequence):
                     cval=cval)
             return x
 
-        def ___read(filepath):
-            
+        

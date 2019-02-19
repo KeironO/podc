@@ -82,6 +82,10 @@ parameter_grid = {
     }
 }
 
+from random import shuffle
+
+
+shuffle(video_ids)
 
 vdl = VideoDataLoader(data_dir, labels, video_ids[0:16])
 X, y = vdl.get_data(
@@ -90,18 +94,21 @@ X, y = vdl.get_data(
     parameter_grid["data"]["max_frames"]
 )
 
-
-train_vg = VideoDataGenerator(X, y, 
+train_vg = VideoDataGenerator(X, y,
         batch_size=parameter_grid["training"]["train_batch_size"],
         upsample=True,
         shuffle=True,
         shear_range=0.2,
         rotation_range=0.2,
         vertical_flip=True,
-        n_jobs=-1)
+        n_jobs=-1
+        )
 
 exit(0)
 
+for X,y in train_vg:
+    print(X.shape)
+    exit(0)
 y_true = []
 y_pred = []
 
