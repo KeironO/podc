@@ -18,6 +18,19 @@ Boston, MA 02110-1301 USA
 '''
 
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
+import numpy as np
 
 def visualise_video_data(X):
-    pass
+    fig = plt.figure()
+
+    frames = []
+
+    print(X.shape)
+    for index in range(X.shape[0]):
+        frames.append([plt.imshow(X[index]/255)])
+
+    ani = animation.ArtistAnimation(fig, frames, interval=50, repeat_delay=1000)
+    plt.show()
+    

@@ -23,7 +23,7 @@ import numpy as np
 import json
 from sklearn.model_selection import KFold, train_test_split
 from deeplearning import VGG19v1
-from utils import Inference
+from utils import Inference, visualise_video_data
 
 home_dir = os.path.expanduser("~")
 slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
@@ -107,7 +107,8 @@ train_vg = VideoDataGenerator(X, y,
 
 for X, y in train_vg:
     for i in range(X.shape[0]):
-        pass
+        visualise_video_data(X[i])
+        break
     break
 exit(0)
 
