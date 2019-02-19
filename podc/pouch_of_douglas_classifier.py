@@ -106,8 +106,9 @@ train_vg = VideoDataGenerator(X, y,
 
 
 for X, y in train_vg:
-    print(y.shape)
-
+    for i in range(X.shape[0]):
+        pass
+    break
 exit(0)
 
 for X,y in train_vg:

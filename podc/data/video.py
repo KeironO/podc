@@ -194,7 +194,7 @@ class VideoDataGenerator(Sequence):
         return X, y
 
     def __data_generation(self, X):
-        def ___random_rotation(x,
+        def __random_rotation(x,
                                rg,
                                fill_mode="nearest",
                                cval=0.,
@@ -349,5 +349,27 @@ class VideoDataGenerator(Sequence):
             return x
 
         # Do the transformations here.
-        for index in X.shape[0]:
+        for index in range(X.shape[0]):
+            if self.featurewise_center:
+                X[index] = __featurewise_centre(X[index])
+            if self.gaussian_blur:
+                X[index] = __gaussian_blur(X[index])
+            if self.rotation_range:
+                X[index] = __random_rotation(X[index], self.rotation_range)
+            if self.brightness_range:
+                pass
+            if self.shear_range:
+                X[index] = __random_shear(X[index], self.shear_range)
+            if self.zoom_range:
+                X[index] = __random_zoom(X[index], self.zoom_range)
+            if self.horizontal_flip:
+                # coinflip
+                if random.randint(0, 1) == 1:
+                    X[index] = __flip_axis(X[index], ROW_AXIS)
+            if self.vertical_flip:
+                if random.randint(0, 1) == 1:
+                    X[index] = __flip_axis(X[index], COL_AXIS)
+            if self.optical_flow:
+                X[index] = __optical_flow(X[index])
         
+        return X
