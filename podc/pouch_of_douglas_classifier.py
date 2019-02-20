@@ -43,11 +43,11 @@ parameter_grid = {
         "max_frames": 80
     },
     "training": {
-        "train_batch_size": 8,
-        "val_batch_size": 2,
-        "test_batch_size": 1,
-        "epochs": 10,
-        "patience": 2
+        "train_batch_size": 16,
+        "val_batch_size": 8,
+        "test_batch_size": 8,
+        "epochs": 1000,
+        "patience": 50
     },
     "model": {
         "vgg16_weights_fp": os.path.join(
