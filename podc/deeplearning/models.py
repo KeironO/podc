@@ -174,7 +174,6 @@ class CheapoKeepo(BaseModel):
     }
 
     def generate_model(self) -> Model:
-
         if not self.model_parameters:
             self.model_parameters = self.default_parameters
 

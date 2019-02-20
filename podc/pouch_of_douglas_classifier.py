@@ -40,13 +40,13 @@ parameter_grid = {
     "data": {
         "height": 64,
         "width": 64,
-        "max_frames": 100
+        "max_frames": 50
     },
     "training": {
         "train_batch_size": 8,
         "val_batch_size": 8,
         "test_batch_size": 8,
-        "epochs": 1,
+        "epochs": 1000,
         "patience": 50
     },
     "model": {
@@ -54,7 +54,7 @@ parameter_grid = {
             home_dir,
             ".keras/models/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5"
             ),
-        "lstm_count":64,
+        "lstm_count": 64,
         "lstm_dropout": 0.2
     }
 }
@@ -84,8 +84,8 @@ for train_index, test_index in kf.split(video_ids):
         batch_size=parameter_grid["training"]["train_batch_size"],
         upsample=True,
         shuffle=True,
-        shear_range=5,
-        rotation_range=2,
+        shear_range=0.9,
+        rotation_range=0.5,
         horizontal_flip=True,
         gaussian_blur=True,
         n_jobs=-1
@@ -120,7 +120,8 @@ for train_index, test_index in kf.split(video_ids):
         train_vg,
         val_vg,
         epochs=parameter_grid["training"]["epochs"],
-        patience=parameter_grid["training"]["patience"])
+        patience=parameter_grid["training"]["patience"]
+        )
 
     ground_truths, model_predictions = clf.predict_pod(test_vg)
     y_true.extend(ground_truths)

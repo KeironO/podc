@@ -49,7 +49,7 @@ class VideoDataLoader:
             if num_frames > max_frames:
                 rand_rnge = random.sample(rnge, max_frames)
                 rand_rnge = sorted(rand_rnge)
-                new_frames = np.array(frames)[rand_rnge].tolist()
+                new_frames = np.array(frames)[rand_rnge]
             elif num_frames < max_frames:
                 new_frames = frames
                 diff = max_frames - num_frames
@@ -57,7 +57,9 @@ class VideoDataLoader:
                     choice = random.choice(rnge)
                     copy = frames[choice]
                     new_frames.insert(choice, copy)
-            
+                new_frames = np.array(new_frames)
+            else:
+                new_frames = np.array(frames)
             return new_frames
 
         filepath = join(self.data_dir, id)
@@ -74,10 +76,9 @@ class VideoDataLoader:
             frame = frame.reshape(frame.shape[0], frame.shape[1], 3)
             frames.append(frame)
 
-        if max_frames:
-            frames = _fix_length(frames, max_frames)
+        frames = _fix_length(frames, max_frames)
 
-        return np.array(frames), self.labels[id]
+        return frames, self.labels[id]
 
     def get_data(self, height, width, n_frames):
 
@@ -89,10 +90,12 @@ class VideoDataLoader:
         if self.n_jobs > 1:
             data = Parallel(
                 n_jobs=self.n_jobs, prefer="threads")(
-                    delayed(self._load_video)(id, n_frames, height, width)
+                    delayed(self._load_video)(id, height, width, n_frames)
                     for id in self.ids)
         else:
-            data = [self._load_video(x, n_frames, height, width) for x in self.ids]
+            data = [
+                self._load_video(x, height, width, n_frames) for x in self.ids
+            ]
 
         for indx in range(len(data)):
             x, _y = data[indx]
