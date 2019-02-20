@@ -82,8 +82,6 @@ for train_index, test_index in kf.split(video_ids):
         width=parameter_grid["data"]["height"],
         max_frames=parameter_grid["data"]["max_frames"],
         batch_size=parameter_grid["training"]["train_batch_size"],
-        upsample=True,
-        shuffle=True,
         shear_range=0.2,
         rotation_range=20,
         horizontal_flip=True,
@@ -126,7 +124,6 @@ for train_index, test_index in kf.split(video_ids):
     ground_truths, model_predictions = clf.predict_pod(test_vg)
     y_true.extend(ground_truths)
     y_pred.extend(model_predictions)
-    
 
 print(y_true, y_pred)
 

@@ -23,7 +23,7 @@ import itertools
 from keras.models import Sequential, Model
 from keras.models import load_model as k_load_model
 from keras.engine import Model
-from keras.optimizers import SGD, Adam
+from keras.optimizers import SGD, Adam, Adagrad
 from keras.applications import VGG16, VGG19, MobileNet, InceptionV3
 from keras.layers import (Add, GlobalAveragePooling2D, Dense, Lambda, Multiply,
                           Dropout, GlobalMaxPool2D, MaxPooling1D, Flatten,
@@ -191,7 +191,7 @@ class CheapoKeepo(BaseModel):
         video = LSTM(self.model_parameters["lstm_count"])(encoded_frame)
         video = Dropout(self.model_parameters["lstm_dropout"])(video)
 
-        opt = Adam(lr=0.005, decay=0.001)
+        opt = Adagrad()
         outputs = Dense(1, activation="linear")(video)
 
         model = Model(inputs=[inps], outputs=outputs)
