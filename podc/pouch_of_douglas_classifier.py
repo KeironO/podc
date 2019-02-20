@@ -38,9 +38,9 @@ video_ids = np.array(list(labels.keys()))
 
 parameter_grid = {
     "data": {
-        "height": 64,
-        "width": 64,
-        "max_frames": 3
+        "height": 75,
+        "width": 75,
+        "max_frames": 80
     },
     "training": {
         "train_batch_size": 8,
@@ -50,18 +50,22 @@ parameter_grid = {
         "patience": 50
     },
     "model": {
+        "vgg16_weights_fp": os.path.join(
+            home_dir,
+            ".keras/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5"
+            ),
         "hid_states": {
-            "filter": 128,
+            "filter": 256,
             "kernel_size": (4, 4),
-            "recurrent_dropout": 0.5,
-            "dropout": 0.5
+            "recurrent_dropout": 0.2,
+            "dropout": 0.2
         },
         "conv_hid_states": {
-            "filter": 64,
+            "filter": 256,
             "kernel_size": (4, 4)
         },
         "conv_acts": {
-            "filter": 64,
+            "filter": 256,
             "kernel_size": (4, 4)
         },
         "eunice": {
@@ -69,10 +73,10 @@ parameter_grid = {
             "kernel_size": (4, 4)
         },
         "nn": {
-            "filter": 128,
+            "filter": 256,
             "kernel_size": (4, 4),
-            "recurrent_dropout": 0.5,
-            "dropout": 0.5
+            "recurrent_dropout": 0.2,
+            "dropout": 0.2
         },
         "opt": {
             "lr": 0.01,
@@ -92,16 +96,6 @@ X, y = vdl.get_data(
     parameter_grid["data"]["max_frames"]
 )
 
-
-train_vg = VideoDataGenerator(X, y,
-        batch_size=parameter_grid["training"]["train_batch_size"],
-        upsample=True,
-        shuffle=True,
-        vertical_flip=True,
-        n_jobs=-1
-        )
-
-
 y_true = []
 y_pred = []
 
@@ -118,10 +112,12 @@ for train_index, test_index in kf.split(video_ids):
         batch_size=parameter_grid["training"]["train_batch_size"],
         upsample=True,
         shuffle=True,
-        shear_range=0.2,
-        rotation_range=0.2,
-        vertical_flip=True,
-        n_jobs=-1)
+        shear_range=5,
+        rotation_range=2,
+        horizontal_flip=True,
+        gaussian_blur=True,
+        n_jobs=-1
+        )
 
     val_vg = VideoDataGenerator(
         X[val_index],
@@ -130,7 +126,8 @@ for train_index, test_index in kf.split(video_ids):
         width=parameter_grid["data"]["height"],
         max_frames=parameter_grid["data"]["max_frames"],
         batch_size=parameter_grid["training"]["val_batch_size"],
-        n_jobs=-1)
+        n_jobs=-1
+        )
 
     test_vg = VideoDataGenerator(
         X[test_index], y[test_index],
@@ -138,7 +135,8 @@ for train_index, test_index in kf.split(video_ids):
         width=parameter_grid["data"]["height"],
         max_frames=parameter_grid["data"]["max_frames"],
         batch_size=parameter_grid["training"]["test_batch_size"],
-        n_jobs=-1)
+        n_jobs=-1
+        )
 
     clf = VGG19v1(
         parameter_grid["data"]["height"],
@@ -157,7 +155,6 @@ for train_index, test_index in kf.split(video_ids):
     ground_truths, model_predictions = clf.predict_pod(test_vg)
     y_true.extend(ground_truths)
     y_pred.extend(model_predictions)
-    break
 
 inf = Inference(y_true, y_pred)
 

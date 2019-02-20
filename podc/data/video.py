@@ -19,7 +19,7 @@ Boston, MA 02110-1301 USA
 
 import imageio
 from PIL import Image
-from os.path import join, basename, splitext
+from os.path import join
 import random
 from collections import Counter
 from keras.utils import Sequence
@@ -40,8 +40,6 @@ class VideoDataLoader:
         self.labels = labels
         self.ids = ids
         self.n_jobs = n_jobs
-
-
 
     def _load_video(self, id, max_frames, height, width):
 
@@ -80,8 +78,6 @@ class VideoDataLoader:
 
         frames = _fix_length(frames, max_frames)
 
-
-
         return frames, self.labels[id]
 
     def get_data(self, height, width, n_frames):
@@ -107,8 +103,8 @@ class VideoDataLoader:
         return np.array(X), np.array(y)
 
 
-
 class VideoDataGenerator(Sequence):
+
     def __init__(self,
                  X,
                  y,
@@ -203,11 +199,14 @@ class VideoDataGenerator(Sequence):
         return X, y
 
     def __data_generation(self, X):
-        def __random_rotation(x,
-                               rg,
-                               fill_mode="nearest",
-                               cval=0.,
-                               interpolation_order=1):
+        def __random_rotation(
+            x,
+            rg,
+            fill_mode="nearest",
+            cval=0.,
+            interpolation_order=1
+            ):
+
             theta = np.random.uniform(-rg, rg)
             for index in range(x.shape[0]):
                 x[index] = apply_affine_transform(
@@ -331,7 +330,7 @@ class VideoDataGenerator(Sequence):
             return x
 
         def __random_zoom(x, zoom_range, fill_mode="nearest", cval=0.):
-            zx, zy = np.random.uniform(zoom_range[0], zoom_range[1], 2)
+            zx, zy = np.random.uniform(zoom_range, zoom_range + 1, 2)
             for index in range(x.shape[0]):
                 x[index] = apply_affine_transform(
                     x[index],
@@ -380,5 +379,5 @@ class VideoDataGenerator(Sequence):
                     X[index] = __flip_axis(X[index], COL_AXIS)
             if self.optical_flow:
                 X[index] = __optical_flow(X[index])
-        
+
         return X
