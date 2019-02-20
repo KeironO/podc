@@ -21,7 +21,7 @@ from data import VideoDataGenerator, VideoDataLoader
 import os
 import numpy as np
 import json
-from sklearn.model_selection import LeaveOneOut, train_test_split
+from sklearn.model_selection import KFold, train_test_split
 from deeplearning import CheapoKeepo
 from utils import Inference, visualise_video_data
 from random import shuffle
@@ -71,7 +71,7 @@ X, y = vdl.get_data(
 y_true = []
 y_pred = []
 
-kf = LeaveOneOut()
+kf = KFold(n_splits=20)
 
 for train_index, test_index in kf.split(X):
     train_index, val_index = train_test_split(train_index, test_size=0.2)
