@@ -55,26 +55,26 @@ parameter_grid = {
             ".keras/models/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5"
             ),
         "hid_states": {
-            "filter": 256,
-            "kernel_size": (4, 4),
+            "filter": 512,
+            "kernel_size": (3, 3),
             "recurrent_dropout": 0.2,
             "dropout": 0.2
         },
         "conv_hid_states": {
-            "filter": 256,
-            "kernel_size": (4, 4)
+            "filter": 512,
+            "kernel_size": (1, 1)
         },
         "conv_acts": {
-            "filter": 256,
-            "kernel_size": (4, 4)
+            "filter": 512,
+            "kernel_size": (1, 1)
         },
         "eunice": {
             "filter": 1,
-            "kernel_size": (4, 4)
+            "kernel_size": (1, 1)
         },
         "nn": {
-            "filter": 256,
-            "kernel_size": (4, 4),
+            "filter": 512,
+            "kernel_size": (3, 3),
             "recurrent_dropout": 0.2,
             "dropout": 0.2
         },
