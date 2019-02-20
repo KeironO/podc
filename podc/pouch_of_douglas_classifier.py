@@ -39,7 +39,7 @@ video_ids = np.array(list(labels.keys()))
 parameter_grid = {
     "data": {
         "height": 64,
-        "width": 64,
+        "width": 85,
         "max_frames": 80
     },
     "training": {
@@ -132,5 +132,5 @@ print(y_true, y_pred)
 
 inf = Inference(y_true, y_pred)
 
-with open(os.path.join(results_dir + "10kf_results.json"), "w") as outfile:
+with open(os.path.join(results_dir + "/10kf_results.json"), "w") as outfile:
     json.dump(str(inf.to_dict()), outfile, indent=4)
