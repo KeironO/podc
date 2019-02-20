@@ -40,10 +40,10 @@ parameter_grid = {
     "data": {
         "height": 64,
         "width": 64,
-        "max_frames": 50
+        "max_frames": 80
     },
     "training": {
-        "train_batch_size": 8,
+        "train_batch_size": 16,
         "val_batch_size": 8,
         "test_batch_size": 8,
         "epochs": 1000,
@@ -84,8 +84,8 @@ for train_index, test_index in kf.split(video_ids):
         batch_size=parameter_grid["training"]["train_batch_size"],
         upsample=True,
         shuffle=True,
-        shear_range=0.9,
-        rotation_range=0.5,
+        shear_range=0.2,
+        rotation_range=20,
         horizontal_flip=True,
         gaussian_blur=True,
         n_jobs=-1
@@ -126,7 +126,7 @@ for train_index, test_index in kf.split(video_ids):
     ground_truths, model_predictions = clf.predict_pod(test_vg)
     y_true.extend(ground_truths)
     y_pred.extend(model_predictions)
-    break
+    
 
 print(y_true, y_pred)
 
