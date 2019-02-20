@@ -46,8 +46,8 @@ parameter_grid = {
         "train_batch_size": 8,
         "val_batch_size": 2,
         "test_batch_size": 1,
-        "epochs": 1,
-        "patience": 50
+        "epochs": 10,
+        "patience": 2
     },
     "model": {
         "vgg16_weights_fp": os.path.join(
@@ -158,5 +158,5 @@ for train_index, test_index in kf.split(video_ids):
 
 inf = Inference(y_true, y_pred)
 
-with open(results_dir + "/10kf_results.json", "w") as outfile:
+with open(os.path.join(results_dir + "10kf_results.json"), "w") as outfile:
     json.dump(str(inf.to_dict()), outfile, indent=4)

@@ -202,7 +202,14 @@ class VGG19v1(BaseModel):
 
         inp = Input(
             shape=(self.max_frames, self.height, self.width, 3), name="input")
+
         cnn = VGG16(include_top=False)
+        
+        print(type(cnn))
+        exit(0)
+
+        if "vgg16_weights_fp" in self.model_parameters:
+            print("Loading weights")
 
         for layer in cnn.layers:
             layer.trainable = False
