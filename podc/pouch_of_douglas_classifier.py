@@ -24,6 +24,7 @@ import json
 from sklearn.model_selection import KFold, train_test_split
 from deeplearning import VGG19v1
 from utils import Inference, visualise_video_data
+from random import shuffle
 
 home_dir = os.path.expanduser("~")
 slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
@@ -39,13 +40,13 @@ parameter_grid = {
     "data": {
         "height": 64,
         "width": 64,
-        "max_frames": 20
+        "max_frames": 3
     },
     "training": {
         "train_batch_size": 8,
         "val_batch_size": 2,
         "test_batch_size": 1,
-        "epochs": 1000,
+        "epochs": 1,
         "patience": 50
     },
     "model": {
@@ -82,39 +83,25 @@ parameter_grid = {
     }
 }
 
-from random import shuffle
-
-
 shuffle(video_ids)
 
-vdl = VideoDataLoader(data_dir, labels, video_ids[0:16])
+vdl = VideoDataLoader(data_dir, labels, video_ids)
 X, y = vdl.get_data(
     parameter_grid["data"]["height"],
     parameter_grid["data"]["width"],
     parameter_grid["data"]["max_frames"]
 )
 
+
 train_vg = VideoDataGenerator(X, y,
         batch_size=parameter_grid["training"]["train_batch_size"],
         upsample=True,
         shuffle=True,
-        shear_range=0.2,
-        rotation_range=0.2,
         vertical_flip=True,
         n_jobs=-1
         )
 
 
-for X, y in train_vg:
-    for i in range(X.shape[0]):
-        visualise_video_data(X[i])
-        break
-    break
-exit(0)
-
-for X,y in train_vg:
-    print(X.shape)
-    exit(0)
 y_true = []
 y_pred = []
 
@@ -124,9 +111,7 @@ for train_index, test_index in kf.split(video_ids):
     train_index, val_index = train_test_split(train_index, test_size=0.2)
 
     train_vg = VideoDataGenerator(
-        data_dir,
-        video_ids[train_index],
-        labels,
+        X[train_index], y[train_index],
         height=parameter_grid["data"]["height"],
         width=parameter_grid["data"]["height"],
         max_frames=parameter_grid["data"]["max_frames"],
@@ -139,9 +124,8 @@ for train_index, test_index in kf.split(video_ids):
         n_jobs=-1)
 
     val_vg = VideoDataGenerator(
-        data_dir,
-        video_ids[val_index],
-        labels,
+        X[val_index],
+        y[val_index],
         height=parameter_grid["data"]["height"],
         width=parameter_grid["data"]["height"],
         max_frames=parameter_grid["data"]["max_frames"],
@@ -149,9 +133,7 @@ for train_index, test_index in kf.split(video_ids):
         n_jobs=-1)
 
     test_vg = VideoDataGenerator(
-        data_dir,
-        video_ids[test_index],
-        labels,
+        X[test_index], y[test_index],
         height=parameter_grid["data"]["height"],
         width=parameter_grid["data"]["height"],
         max_frames=parameter_grid["data"]["max_frames"],
@@ -180,4 +162,4 @@ for train_index, test_index in kf.split(video_ids):
 inf = Inference(y_true, y_pred)
 
 with open(results_dir + "/10kf_results.json", "w") as outfile:
-    json.dump(inf.to_dict(), outfile, indent=4)
+    json.dump(str(inf.to_dict()), outfile, indent=4)

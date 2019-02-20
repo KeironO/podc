@@ -140,7 +140,6 @@ class Inference:
         results["y_true"] = self.y_true
         results["y_predC"] = self.y_predC.tolist()
         results["cm"] = self.confusion_matrix().tolist()
-        results["classification_report"] = self.classification_report()
         results["precision"] = self.precision()
         results["recall"] = self.recall()
         return results

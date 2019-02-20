@@ -1,0 +1,19 @@
+plt	visualise.py	/^import matplotlib.pyplot as plt$/;"	I
+animation	visualise.py	/^import matplotlib.animation as animation$/;"	I
+np	visualise.py	/^import numpy as np$/;"	I
+visualise_video_data	visualise.py	/^def visualise_video_data(X):$/;"	f
+plt	inference.py	/^import matplotlib.pyplot as plt$/;"	I
+np	inference.py	/^import numpy as np$/;"	I
+Inference	inference.py	/^class Inference:$/;"	c
+__init__	inference.py	/^    def __init__(self, y_true=None, y_pred=None, y_predC=None):$/;"	m	class:Inference
+_to_class	inference.py	/^    def _to_class(self):$/;"	m	class:Inference
+confusion_matrix	inference.py	/^    def confusion_matrix(self):$/;"	m	class:Inference
+classification_report	inference.py	/^    def classification_report(self):$/;"	m	class:Inference
+accuracy_score	inference.py	/^    def accuracy_score(self):$/;"	m	class:Inference
+precision	inference.py	/^    def precision(self):$/;"	m	class:Inference
+recall	inference.py	/^    def recall(self):$/;"	m	class:Inference
+ppv	inference.py	/^    def ppv(self):$/;"	m	class:Inference
+npv	inference.py	/^    def npv(self):$/;"	m	class:Inference
+roc_curve	inference.py	/^    def roc_curve(self, fp=None):$/;"	m	class:Inference
+cohens_kappa	inference.py	/^    def cohens_kappa(self):$/;"	m	class:Inference
+to_dict	inference.py	/^    def to_dict(self):$/;"	m	class:Inference

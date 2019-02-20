@@ -41,7 +41,28 @@ class VideoDataLoader:
         self.ids = ids
         self.n_jobs = n_jobs
 
+
+
     def _load_video(self, id, max_frames, height, width):
+
+        def _fix_length(frames, max_frames):
+            num_frames = len(frames)
+            rnge = list(range(num_frames))
+            if num_frames > max_frames:
+                rand_rnge = random.sample(rnge, max_frames)
+                rand_rnge = sorted(rand_rnge)
+                new_frames = np.array(frames)[rand_rnge]
+            elif num_frames < max_frames:
+                new_frames = frames
+                diff = max_frames - num_frames
+                for i in range(diff):
+                    choice = random.choice(rnge)
+                    copy = frames[choice]
+                    new_frames.insert(choice, copy)
+                new_frames = np.array(new_frames)
+            else:
+                new_frames = np.array(frames)
+            return new_frames
 
         filepath = join(self.data_dir, id)
 
@@ -57,28 +78,15 @@ class VideoDataLoader:
             frame = frame.reshape(frame.shape[0], frame.shape[1], 3)
             frames.append(frame)
 
-        n_frames = len(frames)
-        rnge = list(range(n_frames))
+        frames = _fix_length(frames, max_frames)
 
-        if n_frames > max_frames:
-            rand_rnge = random.sample(rnge, max_frames)
-            rand_rnge = sorted(rand_rnge)
-            frames = np.array(frames)[rand_rnge]
-        elif n_frames < max_frames:
-            diff = max_frames - n_frames
-            for i in range(diff):
-                choice = random.choice(rnge)
-                copy = frames[choice]
-                frames.insert(choice, copy)
-            frames = np.array(frames)
-        else:
-            np.array(frames)
+
 
         return frames, self.labels[id]
 
     def get_data(self, height, width, n_frames):
 
-        X = np.zeros((len(self.ids), n_frames, height, width, 3))
+        X = []
         y = []
 
         if self.n_jobs == -1:
@@ -93,10 +101,11 @@ class VideoDataLoader:
 
         for indx in range(len(data)):
             x, _y = data[indx]
-            X[indx] = x
+            X.append(x)
             y.append(_y)
 
-        return X, np.array(y)
+        return np.array(X), np.array(y)
+
 
 
 class VideoDataGenerator(Sequence):
