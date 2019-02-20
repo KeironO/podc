@@ -41,7 +41,7 @@ class VideoDataLoader:
         self.ids = ids
         self.n_jobs = n_jobs
 
-    def _load_video(self, id, max_frames, height, width):
+    def _load_video(self, id, height, width, max_frames):
 
         def _fix_length(frames, max_frames):
             num_frames = len(frames)
@@ -49,7 +49,7 @@ class VideoDataLoader:
             if num_frames > max_frames:
                 rand_rnge = random.sample(rnge, max_frames)
                 rand_rnge = sorted(rand_rnge)
-                new_frames = np.array(frames)[rand_rnge]
+                new_frames = np.array(frames)[rand_rnge].tolist()
             elif num_frames < max_frames:
                 new_frames = frames
                 diff = max_frames - num_frames
@@ -57,9 +57,7 @@ class VideoDataLoader:
                     choice = random.choice(rnge)
                     copy = frames[choice]
                     new_frames.insert(choice, copy)
-                new_frames = np.array(new_frames)
-            else:
-                new_frames = np.array(frames)
+            
             return new_frames
 
         filepath = join(self.data_dir, id)
@@ -76,9 +74,10 @@ class VideoDataLoader:
             frame = frame.reshape(frame.shape[0], frame.shape[1], 3)
             frames.append(frame)
 
-        frames = _fix_length(frames, max_frames)
+        if max_frames:
+            frames = _fix_length(frames, max_frames)
 
-        return frames, self.labels[id]
+        return np.array(frames), self.labels[id]
 
     def get_data(self, height, width, n_frames):
 

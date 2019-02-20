@@ -70,21 +70,21 @@ class BaseModel:
             val_generator,
             epochs,
             patience,
+            monitor="val_loss",
             class_weights=False) -> dict:
 
         hi = History()
 
         mc = ModelCheckpoint(
-            self.model_fp, monitor="val_loss", verbose=1, save_best_only=True)
+            self.model_fp, monitor=monitor, verbose=1, save_best_only=True)
 
-        es = EarlyStopping(monitor="val_loss", verbose=1, patience=patience)
+        es = EarlyStopping(monitor=monitor, verbose=1, patience=patience)
 
         reduce_lr = ReduceLROnPlateau(
-            monitor="val_loss",
+            monitor=monitor,
             factor=0.2,
-            patience=int(patience/2),
-            min_lr=1e-9
-            )
+            patience=int(patience / 2),
+            min_lr=1e-9)
 
         clf = self.model
 
@@ -160,6 +160,48 @@ class VGG16FHC(BaseModel):
         return model
 
 
+class CheapoKeepo(BaseModel):
+
+    """
+        This model I can train fairly effortlessly on very little hardware.
+
+        It's primarily used for testing purposes.
+    """
+
+    default_parameters = {
+        "lstm_count": 64,
+        "lstm_dropout": 0.2
+    }
+
+    def generate_model(self) -> Model:
+
+        if not self.model_parameters:
+            self.model_parameters = self.default_parameters
+
+        inps = Input(shape=(None, self.height, self.width, 3))
+
+        cnn = VGG16(weights=None, include_top=False, pooling="avg")
+
+        if "vgg16_weights_fp" in self.model_parameters:
+            cnn.load_weights(self.model_parameters["vgg16_weights_fp"])
+
+            for layer in cnn.layers:
+                layer.trainable = False
+
+        encoded_frame = TimeDistributed(Lambda(lambda x: cnn(x)))(inps)
+        video = LSTM(self.model_parameters["lstm_count"])(encoded_frame)
+        video = Dropout(self.model_parameters["lstm_dropout"])(video)
+
+        opt = Adam(lr=0.005, decay=0.001)
+        outputs = Dense(1, activation="linear")(video)
+
+        model = Model(inputs=[inps], outputs=outputs)
+
+        model.compile(optimizer=opt, loss="mean_squared_error")
+
+        return model
+
+
 class VGG16PouchOfDouglas(BaseModel):
 
     default_parameters = {
@@ -208,8 +250,8 @@ class VGG16PouchOfDouglas(BaseModel):
         if "vgg16_weights_fp" in self.model_parameters:
             cnn.load_weights(self.model_parameters["vgg16_weights_fp"])
 
-        for layer in cnn.layers:
-            layer.trainable = False
+            for layer in cnn.layers:
+                layer.trainable = False
 
         frame_acts = TimeDistributed(cnn)(inp)
 

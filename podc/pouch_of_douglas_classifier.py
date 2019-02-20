@@ -22,7 +22,7 @@ import os
 import numpy as np
 import json
 from sklearn.model_selection import KFold, train_test_split
-from deeplearning import VGG16PouchOfDouglas
+from deeplearning import CheapoKeepo
 from utils import Inference, visualise_video_data
 from random import shuffle
 
@@ -38,15 +38,15 @@ video_ids = np.array(list(labels.keys()))
 
 parameter_grid = {
     "data": {
-        "height": 75,
-        "width": 75,
-        "max_frames": 80
+        "height": 64,
+        "width": 64,
+        "max_frames": 100
     },
     "training": {
-        "train_batch_size": 16,
+        "train_batch_size": 8,
         "val_batch_size": 8,
         "test_batch_size": 8,
-        "epochs": 1000,
+        "epochs": 1,
         "patience": 50
     },
     "model": {
@@ -54,36 +54,8 @@ parameter_grid = {
             home_dir,
             ".keras/models/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5"
             ),
-        "hid_states": {
-            "filter": 512,
-            "kernel_size": (3, 3),
-            "recurrent_dropout": 0.2,
-            "dropout": 0.2
-        },
-        "conv_hid_states": {
-            "filter": 512,
-            "kernel_size": (1, 1)
-        },
-        "conv_acts": {
-            "filter": 512,
-            "kernel_size": (1, 1)
-        },
-        "eunice": {
-            "filter": 1,
-            "kernel_size": (1, 1)
-        },
-        "nn": {
-            "filter": 512,
-            "kernel_size": (3, 3),
-            "recurrent_dropout": 0.2,
-            "dropout": 0.2
-        },
-        "opt": {
-            "lr": 0.01,
-            "beta_1": 0.9,
-            "beta_2": 0.9,
-            "decay": 0.0
-        }
+        "lstm_count":64,
+        "lstm_dropout": 0.2
     }
 }
 
@@ -91,9 +63,9 @@ shuffle(video_ids)
 
 vdl = VideoDataLoader(data_dir, labels, video_ids)
 X, y = vdl.get_data(
-    parameter_grid["data"]["height"],
-    parameter_grid["data"]["width"],
-    parameter_grid["data"]["max_frames"]
+    height=parameter_grid["data"]["height"],
+    width=parameter_grid["data"]["width"],
+    n_frames=parameter_grid["data"]["max_frames"]
 )
 
 y_true = []
@@ -138,12 +110,11 @@ for train_index, test_index in kf.split(video_ids):
         n_jobs=-1
         )
 
-    clf = VGG16PouchOfDouglas(
+    clf = CheapoKeepo(
         parameter_grid["data"]["height"],
         parameter_grid["data"]["width"],
         results_dir,
-        max_frames=parameter_grid["data"]["max_frames"],
-        model_parameters=parameter_grid["model"])
+        max_frames=parameter_grid["data"]["max_frames"])
 
     clf.fit(
         train_vg,
@@ -154,6 +125,9 @@ for train_index, test_index in kf.split(video_ids):
     ground_truths, model_predictions = clf.predict_pod(test_vg)
     y_true.extend(ground_truths)
     y_pred.extend(model_predictions)
+    break
+
+print(y_true, y_pred)
 
 inf = Inference(y_true, y_pred)
 
