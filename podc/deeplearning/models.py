@@ -160,7 +160,7 @@ class VGG16FHC(BaseModel):
         return model
 
 
-class VGG19v1(BaseModel):
+class VGG16PouchOfDouglas(BaseModel):
 
     default_parameters = {
         "hid_states": {
@@ -203,13 +203,10 @@ class VGG19v1(BaseModel):
         inp = Input(
             shape=(self.max_frames, self.height, self.width, 3), name="input")
 
-        cnn = VGG16(include_top=False)
-        
-        print(type(cnn))
-        exit(0)
+        cnn = VGG16(include_top=False, weights=None)
 
         if "vgg16_weights_fp" in self.model_parameters:
-            print("Loading weights")
+            cnn.load_weights(self.model_parameters["vgg16_weights_fp"])
 
         for layer in cnn.layers:
             layer.trainable = False

@@ -22,7 +22,7 @@ import os
 import numpy as np
 import json
 from sklearn.model_selection import KFold, train_test_split
-from deeplearning import VGG19v1
+from deeplearning import VGG16PouchOfDouglas
 from utils import Inference, visualise_video_data
 from random import shuffle
 
@@ -52,7 +52,7 @@ parameter_grid = {
     "model": {
         "vgg16_weights_fp": os.path.join(
             home_dir,
-            ".keras/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5"
+            ".keras/models/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5"
             ),
         "hid_states": {
             "filter": 256,
@@ -138,13 +138,12 @@ for train_index, test_index in kf.split(video_ids):
         n_jobs=-1
         )
 
-    clf = VGG19v1(
+    clf = VGG16PouchOfDouglas(
         parameter_grid["data"]["height"],
         parameter_grid["data"]["width"],
         results_dir,
         max_frames=parameter_grid["data"]["max_frames"],
-        model_parameters=parameter_grid["model"]
-        )
+        model_parameters=parameter_grid["model"])
 
     clf.fit(
         train_vg,
