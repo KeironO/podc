@@ -36,7 +36,7 @@ class BaseModel:
     def __init__(self,
                  height: int,
                  width: int,
-                 output_dir: str,
+                 model_fp: str,
                  n_classes: int = 1,
                  max_frames: int = 1,
                  n_channels: int = 3,
@@ -45,12 +45,11 @@ class BaseModel:
 
         self.height = int(height)
         self.width = int(width)
-        self.output_dir = output_dir
         self.n_classes = n_classes
         self.max_frames = max_frames
         self.model_parameters = model_parameters
         self.trained = False
-        self.model_fp = join(output_dir, "model.h5")
+        self.model_fp = model_fp
 
         if isfile(self.model_fp):
             self.model = self.generate_model()

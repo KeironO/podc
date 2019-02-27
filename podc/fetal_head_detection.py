@@ -94,6 +94,7 @@ history = clf.fit_generator(
     fhc_train, epochs=1000, validation_data=fhc_val, callbacks=[es, mc]
     )
 
+
 history = history.history
 
 history_fp = os.path.join(results_dir, "history.json")

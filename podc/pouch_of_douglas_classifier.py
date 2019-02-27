@@ -25,6 +25,7 @@ from sklearn.model_selection import KFold, train_test_split
 from deeplearning import CheapoKeepo
 from utils import Inference, visualise_video_data
 from random import shuffle
+import pickle as pkl
 
 home_dir = os.path.expanduser("~")
 slidingsign_dir = os.path.join(home_dir, "Data/podc/slidingsign/")
@@ -39,7 +40,7 @@ video_ids = np.array(list(labels.keys()))
 parameter_grid = {
     "data": {
         "height": 64,
-        "width": 85,
+        "width": 96,
         "max_frames": 80
     },
     "training": {
@@ -71,9 +72,9 @@ X, y = vdl.get_data(
 y_true = []
 y_pred = []
 
-kf = KFold(n_splits=20)
+kf = KFold(n_splits=10)
 
-for train_index, test_index in kf.split(X):
+for fold, (train_index, test_index) in enumerate(kf.split(X)):
     train_index, val_index = train_test_split(train_index, test_size=0.2)
 
     train_vg = VideoDataGenerator(
@@ -108,11 +109,14 @@ for train_index, test_index in kf.split(X):
         n_jobs=-1
         )
 
+    model_fp = os.path.join(results_dir, "fold_%i_best_model.h5" % (fold))
+
     clf = CheapoKeepo(
         parameter_grid["data"]["height"],
         parameter_grid["data"]["width"],
-        results_dir,
-        max_frames=parameter_grid["data"]["max_frames"])
+        max_frames=parameter_grid["data"]["max_frames"],
+        model_fp=model_fp
+        )
 
     clf.fit(
         train_vg,
@@ -124,10 +128,9 @@ for train_index, test_index in kf.split(X):
     ground_truths, model_predictions = clf.predict_pod(test_vg)
     y_true.extend(ground_truths)
     y_pred.extend(model_predictions)
-
-print(y_true, y_pred)
+    
 
 inf = Inference(y_true, y_pred)
 
-with open(os.path.join(results_dir + "/10kf_results.json"), "w") as outfile:
-    json.dump(str(inf.to_dict()), outfile, indent=4)
+with open(os.path.join(results_dir, "10kf_results.pkl"), "wb") as outfile:
+    pkl.dump(inf, outfile)
